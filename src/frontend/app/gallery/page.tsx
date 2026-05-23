@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Check,
   Eye,
@@ -42,6 +42,7 @@ export default function GalleryPage() {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [deleteSummary, setDeleteSummary] = useState<string | null>(null);
+  const detailRequestRef = useRef(0);
 
   async function load(cursor: string | null = null) {
     setLoading(true);
@@ -76,17 +77,49 @@ export default function GalleryPage() {
       toggleSelected(image.image_id);
       return;
     }
+    const requestId = detailRequestRef.current + 1;
+    detailRequestRef.current = requestId;
     setSelectedImage(null);
     setDetailLoading(true);
     setDetailError(null);
     try {
-      setSelectedImage(await fetchImage(image.image_id));
+      const detail = await fetchImage(image.image_id);
+      if (detailRequestRef.current === requestId) {
+        setSelectedImage(detail);
+      }
     } catch (caught) {
-      setDetailError(caught instanceof Error ? caught.message : "Image detail lookup failed");
+      if (detailRequestRef.current === requestId) {
+        setDetailError(caught instanceof Error ? caught.message : "Image detail lookup failed");
+      }
     } finally {
-      setDetailLoading(false);
+      if (detailRequestRef.current === requestId) {
+        setDetailLoading(false);
+      }
     }
   }
+
+  const closeDetailDrawer = useCallback(() => {
+    detailRequestRef.current += 1;
+    setSelectedImage(null);
+    setDetailError(null);
+    setDetailLoading(false);
+  }, []);
+
+  useEffect(() => {
+    function handleKeyDown(event: globalThis.KeyboardEvent) {
+      if (event.key === "Escape") {
+        closeDetailDrawer();
+      }
+    }
+
+    if (detailLoading || detailError || selectedImage) {
+      window.addEventListener("keydown", handleKeyDown);
+    }
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [closeDetailDrawer, detailLoading, detailError, selectedImage]);
 
   function toggleSelected(imageId: string) {
     setDeleteError(null);
@@ -280,8 +313,12 @@ export default function GalleryPage() {
       ) : null}
 
       {detailLoading || detailError || selectedImage ? (
-        <div className="drawer-backdrop" role="presentation">
-          <aside className="image-detail-drawer" aria-label="Image detail drawer">
+        <div className="drawer-backdrop" onClick={closeDetailDrawer} role="presentation">
+          <aside
+            className="image-detail-drawer"
+            aria-label="Image detail drawer"
+            onClick={(event) => event.stopPropagation()}
+          >
             <div className="image-detail-head">
               <div>
                 <h2>{selectedImage?.title || "Image preview"}</h2>
@@ -293,10 +330,7 @@ export default function GalleryPage() {
               </div>
               <button
                 className="icon-button"
-                onClick={() => {
-                  setSelectedImage(null);
-                  setDetailError(null);
-                }}
+                onClick={closeDetailDrawer}
                 type="button"
                 aria-label="Close image detail"
               >

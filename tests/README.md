@@ -5,8 +5,8 @@ This folder contains cross-project test entrypoints, fixtures, smoke scripts, e2
 Current state:
 
 - Backend core scaffold exists at `src/backend`.
-- Frontend scaffold exists and Home / Download / Gallery / Settings / Tasks now use real data APIs plus Phase 7B UI polish anchors.
-- Runnable backend unit, stage, deterministic integration, API smoke, Phase 3B queue, Phase 4B data API, Phase 4C configured download, Phase 4D gallery file API, Phase 4E gallery delete, Phase 5A author batch, Phase 5B bookmark batch, Phase 6A smart parse, Phase 6B smart download, and frontend scaffold checks are available. The frontend scaffold check also asserts Phase 7B Home banner, Download tabs, Gallery drawer, Tasks modal/recent-list, and Settings category anchors.
+- Frontend scaffold exists and Home / Download / Gallery / Settings / Tasks now use real data APIs plus Phase 7B UI polish/follow-up anchors; this forms the v1.0.0 downloader-first final test surface.
+- Runnable backend unit, stage, deterministic integration, API smoke, Phase 3B queue, Phase 4B data API, Phase 4C configured download, Phase 4D gallery file API, Phase 4E gallery delete, Phase 5A author batch, Phase 5B bookmark batch, Phase 6A smart parse, Phase 6B smart download, and frontend scaffold checks are available. The frontend scaffold check also asserts Phase 7B Home banner selection, Home Rust/performance panels, Download tabs/tag chips/API unwrap guard, Gallery drawer close hooks, Tasks modal/recent-list close hooks, and Settings category anchors.
 
 Run deterministic local tests:
 
@@ -105,7 +105,7 @@ Current structure:
 | `tests/stage/phase5b_bookmark_batch.sh` | Focused bookmark batch API, default count, limit, worker, and partial-failure checks. |
 | `tests/stage/phase6a_smart_parse.sh` | Focused DeepSeek settings, connection test, and smart parse checks with deterministic mocks. |
 | `tests/stage/phase6b_smart_download.sh` | Focused Pixiv smart tag search parsing, smart task worker, provenance, API enqueue, missing-cookie, and count limit checks. |
-| `tests/stage/frontend_scaffold.sh` | Frontend Home dashboard wiring check, Phase 7B UI polish anchors, TypeScript check, and production build. |
+| `tests/stage/frontend_scaffold.sh` | Frontend Home dashboard wiring check, Phase 7B UI polish/follow-up anchors, TypeScript check, and production build. |
 | `tests/integration/backend_sqlite.sh` | Deterministic DB-aware downloader + repository + task integration gate. |
 | `tests/smoke/backend_api.sh` | Deterministic Axum API wrapper smoke checks with mock Pixiv data. |
 | `tests/e2e/live_single_download.sh` | Opt-in live Pixiv E2E; requires runtime cookie. |
@@ -124,7 +124,7 @@ Latest focused frontend check:
 
 ```text
 ./tests/stage/frontend_scaffold.sh
-frontend scaffold checks passed, including Phase 7B UI polish anchors, TypeScript check, and production build
+frontend scaffold checks passed, including Phase 7B UI polish/follow-up anchors, TypeScript check, and production build
 ```
 
 Current live smoke notes are in `tests/live/README.md`.

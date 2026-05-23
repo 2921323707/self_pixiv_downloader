@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useState } from "react";
-import { Download, Heart, Loader2, Send, Sparkles, UserRound } from "lucide-react";
+import { FormEvent, KeyboardEvent, useState } from "react";
+import { Download, Heart, Loader2, Plus, Send, Sparkles, UserRound, X } from "lucide-react";
 import {
   parseSmartPrompt,
   startSmartDownload,
@@ -51,8 +51,10 @@ export default function DownloadPage() {
   const [smartCount, setSmartCount] = useState("20");
   const [smartPolicy, setSmartPolicy] = useState("exclude");
   const [smartPlan, setSmartPlan] = useState<SmartParseResult | null>(null);
-  const [smartTagsText, setSmartTagsText] = useState("");
-  const [smartNegativeTagsText, setSmartNegativeTagsText] = useState("");
+  const [smartTags, setSmartTags] = useState<string[]>([]);
+  const [smartNegativeTags, setSmartNegativeTags] = useState<string[]>([]);
+  const [smartTagDraft, setSmartTagDraft] = useState("");
+  const [smartNegativeTagDraft, setSmartNegativeTagDraft] = useState("");
   const [smartTaskId, setSmartTaskId] = useState<string | null>(null);
   const [smartError, setSmartError] = useState<string | null>(null);
   const [smartSubmitting, setSmartSubmitting] = useState(false);
@@ -131,8 +133,10 @@ export default function DownloadPage() {
         r18_policy: smartPolicy
       });
       setSmartPlan(result);
-      setSmartTagsText(result.tags.join(", "));
-      setSmartNegativeTagsText(result.negative_tags.join(", "));
+      setSmartTags(result.tags);
+      setSmartNegativeTags(result.negative_tags);
+      setSmartTagDraft("");
+      setSmartNegativeTagDraft("");
     } catch (caught) {
       setSmartError(caught instanceof Error ? caught.message : "Smart parse failed");
     } finally {
@@ -141,19 +145,29 @@ export default function DownloadPage() {
   }
 
   async function submitSmartDownload() {
-    if (!smartPlan) return;
+    const tags = mergeTags(smartTags, tagTokens(smartTagDraft));
+    const negativeTags = mergeTags(smartNegativeTags, tagTokens(smartNegativeTagDraft));
+    if (tags.length === 0) {
+      setSmartError("Add at least one tag before enqueueing smart download.");
+      return;
+    }
+
     setSmartError(null);
     setSmartTaskId(null);
     setSmartDownloadSubmitting(true);
+    setSmartTags(tags);
+    setSmartNegativeTags(negativeTags);
+    setSmartTagDraft("");
+    setSmartNegativeTagDraft("");
 
     try {
       const result = await startSmartDownload({
-        prompt: smartPrompt.trim(),
-        tags: splitTags(smartTagsText),
-        negative_tags: splitTags(smartNegativeTagsText),
-        count: smartPlan.count_recommend,
+        prompt: smartPrompt.trim() || tags.join(" "),
+        tags,
+        negative_tags: negativeTags,
+        count: smartPlan?.count_recommend || (smartCount.trim() ? Number(smartCount) : undefined),
         r18_policy: smartPolicy,
-        model: smartPlan.model
+        model: smartPlan?.model
       });
       setSmartTaskId(result.task_id);
     } catch (caught) {
@@ -391,7 +405,6 @@ export default function DownloadPage() {
                 placeholder="下载一些蓝色头发、赛博朋克风格的少女插画"
                 value={smartPrompt}
                 onChange={(event) => setSmartPrompt(event.target.value)}
-                required
               />
             </label>
 
@@ -429,41 +442,56 @@ export default function DownloadPage() {
               Parse tags
             </button>
 
-            {smartPlan ? (
-              <div className="success-box">
-                <strong>Tag plan ready</strong>
-                <label>
-                  Tags
-                  <input
-                    value={smartTagsText}
-                    onChange={(event) => setSmartTagsText(event.target.value)}
-                  />
-                </label>
-                <label>
-                  Negative tags
-                  <input
-                    value={smartNegativeTagsText}
-                    onChange={(event) => setSmartNegativeTagsText(event.target.value)}
-                  />
-                </label>
+            <section className="smart-tag-editor" aria-label="Smart tag chip editor">
+              <div>
+                <strong>{smartPlan ? "Tag plan ready" : "Manual tag download"}</strong>
                 <span>
-                  Count {smartPlan.count_recommend} · {smartPolicy} · {smartPlan.model}
+                  Count {smartPlan?.count_recommend || smartCount || "default"} · {smartPolicy}
+                  {smartPlan?.model ? ` · ${smartPlan.model}` : ""}
                 </span>
-                <button
-                  className="button secondary"
-                  disabled={smartDownloadSubmitting}
-                  onClick={submitSmartDownload}
-                  type="button"
-                >
-                  {smartDownloadSubmitting ? (
-                    <Loader2 className="spin" size={17} aria-hidden="true" />
-                  ) : (
-                    <Send size={17} aria-hidden="true" />
-                  )}
-                  Enqueue smart download
-                </button>
               </div>
-            ) : null}
+              <TagChipInput
+                label="Tags"
+                placeholder="blue hair"
+                value={smartTagDraft}
+                tags={smartTags}
+                onAdd={(value) => {
+                  setSmartTags((current) => mergeTags(current, tagTokens(value)));
+                  setSmartTagDraft("");
+                }}
+                onChange={setSmartTagDraft}
+                onRemove={(tag) =>
+                  setSmartTags((current) => current.filter((item) => item !== tag))
+                }
+              />
+              <TagChipInput
+                label="Negative tags"
+                placeholder="low quality"
+                value={smartNegativeTagDraft}
+                tags={smartNegativeTags}
+                onAdd={(value) => {
+                  setSmartNegativeTags((current) => mergeTags(current, tagTokens(value)));
+                  setSmartNegativeTagDraft("");
+                }}
+                onChange={setSmartNegativeTagDraft}
+                onRemove={(tag) =>
+                  setSmartNegativeTags((current) => current.filter((item) => item !== tag))
+                }
+              />
+              <button
+                className="button secondary"
+                disabled={smartDownloadSubmitting}
+                onClick={submitSmartDownload}
+                type="button"
+              >
+                {smartDownloadSubmitting ? (
+                  <Loader2 className="spin" size={17} aria-hidden="true" />
+                ) : (
+                  <Send size={17} aria-hidden="true" />
+                )}
+                Enqueue smart download
+              </button>
+            </section>
 
             {smartTaskId ? (
               <div className="success-box">
@@ -492,9 +520,67 @@ export default function DownloadPage() {
   );
 }
 
-function splitTags(value: string): string[] {
+function tagTokens(value: string): string[] {
   return value
     .split(/[,\n]/)
     .map((tag) => tag.trim())
     .filter(Boolean);
+}
+
+function mergeTags(current: string[], incoming: string[]) {
+  return Array.from(new Set([...current, ...incoming]));
+}
+
+function TagChipInput({
+  label,
+  placeholder,
+  tags,
+  value,
+  onAdd,
+  onChange,
+  onRemove
+}: {
+  label: string;
+  placeholder: string;
+  tags: string[];
+  value: string;
+  onAdd: (value: string) => void;
+  onChange: (value: string) => void;
+  onRemove: (tag: string) => void;
+}) {
+  function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    onAdd(value);
+  }
+
+  return (
+    <label className="tag-chip-field">
+      {label}
+      <div className="tag-chip-box">
+        {tags.map((tag) => (
+          <span className="tag-chip" key={tag}>
+            {tag}
+            <button aria-label={`Remove ${tag}`} onClick={() => onRemove(tag)} type="button">
+              <X size={13} aria-hidden="true" />
+            </button>
+          </span>
+        ))}
+        <input
+          placeholder={placeholder}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          onKeyDown={handleKeyDown}
+        />
+        <button
+          className="icon-button"
+          onClick={() => onAdd(value)}
+          type="button"
+          aria-label={`Add ${label.toLowerCase()}`}
+        >
+          <Plus size={15} aria-hidden="true" />
+        </button>
+      </div>
+    </label>
+  );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useState } from "react";
 import { ListChecks, Loader2, RefreshCw, Search, X } from "lucide-react";
 import { fetchTask, fetchTasks, TaskSnapshot, TaskSummary } from "../../lib/api";
 import { StatusBadge } from "../../components/StatusBadge";
@@ -103,6 +103,26 @@ export default function TasksPage() {
     setDetailOpen(true);
   }
 
+  const closeDetail = useCallback(() => {
+    setDetailOpen(false);
+  }, []);
+
+  useEffect(() => {
+    function handleKeyDown(event: globalThis.KeyboardEvent) {
+      if (event.key === "Escape") {
+        closeDetail();
+      }
+    }
+
+    if (detailOpen) {
+      window.addEventListener("keydown", handleKeyDown);
+    }
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [closeDetail, detailOpen]);
+
   const total = task?.progress_total || 1;
   const progress = task ? ((task.progress_done + task.progress_failed) / total) * 100 : 0;
 
@@ -182,8 +202,14 @@ export default function TasksPage() {
       </section>
 
       {detailOpen ? (
-        <div className="modal-backdrop" role="presentation">
-          <section className="task-modal" aria-label="Task detail modal" role="dialog" aria-modal="true">
+        <div className="modal-backdrop" onClick={closeDetail} role="presentation">
+          <section
+            className="task-modal"
+            aria-label="Task detail modal"
+            role="dialog"
+            aria-modal="true"
+            onClick={(event) => event.stopPropagation()}
+          >
             <div className="image-detail-head">
               <div className="panel-title modal-title">
                 <ListChecks size={18} aria-hidden="true" />
@@ -191,7 +217,7 @@ export default function TasksPage() {
               </div>
               <button
                 className="icon-button"
-                onClick={() => setDetailOpen(false)}
+                onClick={closeDetail}
                 type="button"
                 aria-label="Close task detail"
               >

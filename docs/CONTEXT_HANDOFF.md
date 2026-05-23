@@ -4,17 +4,17 @@
 
 ## 一句话项目状态
 
-这是一个本地优先的 Pixiv AI 下载与智能检索平台。当前采用 downloader-first 路线，已跑通真实 Pixiv 单作品下载，并已完成 SQLite migration、图片仓储、settings 仓储、DB-aware downloader、任务状态持久化、确定性测试脚本结构、薄 Axum API wrapper、in-process Tokio 后台任务队列、Next.js 前端雏形、Phase 4B gallery/settings/task-list 最小数据 API 接线、Phase 4D Gallery 文件预览、Phase 4E Gallery 删除、Phase 5A 作者批量下载、Phase 5B 收藏批量下载、Phase 6A DeepSeek 智能解析、Phase 6B smart 标签搜索批量下载、Phase 7A Home Dashboard 首页真实化，以及 Phase 7B UI Layout / Interaction Polish 第一版。
+这是一个本地优先的 Pixiv AI 下载与智能检索平台。当前采用 downloader-first 路线，已跑通真实 Pixiv 单作品下载，并已完成 SQLite migration、图片仓储、settings 仓储、DB-aware downloader、任务状态持久化、确定性测试脚本结构、薄 Axum API wrapper、in-process Tokio 后台任务队列、Next.js 前端工作台、Phase 4B gallery/settings/task-list 最小数据 API 接线、Phase 4D Gallery 文件预览、Phase 4E Gallery 删除、Phase 5A 作者批量下载、Phase 5B 收藏批量下载、Phase 6A DeepSeek 智能解析、Phase 6B smart 标签搜索批量下载、Phase 7A Home Dashboard 首页真实化、Phase 7B UI Layout / Interaction Polish，以及 Phase 7B follow-up UI 格式检查与交互修补。按 downloader-first 产品边界，当前可作为 v1.0.0 最终形态。
 
 ## 当前阶段
 
-当前阶段：**Phase 7B - UI Layout / Interaction Polish 第一版** 已完成。
+当前阶段：**v1.0.0 Downloader-First Final** 已完成。
 
-2026-05-22 手动浏览器锚点：用户已确认在前端输入 Pixiv 作品 ID 可以成功下载，并确认 Author Batch 和 Bookmarks Batch 可用。2026-05-23：Smart Retrieval 已从“解析标签”推进到“解析后入队 smart 批量下载”，并经用户手动检查当前没有明显问题。同日 Home Dashboard 已在本地浏览器确认可通过真实 API 展示任务、图库预览和配置状态，控制台无错误。2026-05-23：Phase 7B UI polish 已完成确定性前端检查，未新增后端 API。
+2026-05-22 手动浏览器锚点：用户已确认在前端输入 Pixiv 作品 ID 可以成功下载，并确认 Author Batch 和 Bookmarks Batch 可用。2026-05-23：Smart Retrieval 已从“解析标签”推进到“解析后入队 smart 批量下载”，并经用户手动检查当前没有明显问题。同日 Home Dashboard 已在本地浏览器确认可通过真实 API 展示任务、图库预览和配置状态，控制台无错误。2026-05-23：Phase 7B UI polish 已完成确定性前端检查，未新增后端 API。Phase 7B follow-up 已补 Home banner 前端候选筛选、Home panel 底部对齐、Home command center / Rust Core Driver / Performance Watch、Smart 正/负 tag chip 手动输入、API client 空/非 JSON 响应保护、Gallery drawer / Tasks modal 关闭交互和移动端布局锚点，仍未新增后端 API。2026-05-23：项目状态确认为 v1.0.0 downloader-first final，后续工作进入 v1.x / v2 进化讨论。
 
 ## 当前真实边界
 
-后端：当前 single-download -> task -> indexed metadata -> Gallery preview/delete、author batch -> multi-item task -> DB-aware downloads、bookmark batch -> multi-item task -> DB-aware downloads、natural language -> DeepSeek -> tag plan preview -> Pixiv tag search -> smart batch task 已经可用，但不能说“全产品后端完成”。
+后端：当前 single-download -> task -> indexed metadata -> Gallery preview/delete、author batch -> multi-item task -> DB-aware downloads、bookmark batch -> multi-item task -> DB-aware downloads、natural language -> DeepSeek -> tag plan preview -> Pixiv tag search -> smart batch task 已经可用。对 v1.0.0 而言，这是完整的 downloader-first 后端边界；Top10 / Random / thumbnail cache / cancel-retry / image edit-map 属于后续进化，不再阻塞 v1.0.0。
 
 已完成的是：
 
@@ -45,25 +45,26 @@
 - `default_batch_count` 默认批量数量设置，默认 `20`
 - default download root resolves to repository `output/` through `project:output`
 
-还未完成的是：
+v1.x / v2 候选，不属于 v1.0.0 阻塞：
 
 - 生成缩略图缓存 API
 - top10 / random 批量下载
 - 更完整的图库筛选、编辑与地图 API
 
-前端：当前是可运行雏形，不是完整产品 UI。
+前端：当前是可运行的 v1.0.0 工作台 UI，不是终局型全产品 UI。
 
 - Download 页已真实对接单作品下载 API
 - Download 页已真实对接 Bookmarks 批量下载 API
 - Download 页已真实对接 Author 批量下载 API
 - Download 页已真实对接 Smart Retrieval 解析 API，并可编辑解析出的 tags / negative tags 后入队 smart 批量下载任务
+- Download 页 Smart tab 已支持不调用 DeepSeek 的手动正/负 tag chip 输入，仍复用 `POST /api/smart/download`
 - Download 页已从左大栏/右堆叠改为 Single / Author / Bookmarks / Smart 顶部 tabs 工作台
 - Download 页发起的单作品任务会使用 Settings 保存的 Pixiv cookie 和 download_base_path
 - Tasks 页已真实对接 task-id 轮询 API 和任务列表 API，Recent Tasks 默认 10 条，可展开更多，点击后用 modal 动态加载进度/items/logs
-- Gallery 页已真实对接图片 metadata 列表 API，可通过安全 file endpoint 显示本地图片预览，点击图片打开右侧详情 drawer，并支持多选删除本地文件和 SQLite 索引
+- Gallery 页已真实对接图片 metadata 列表 API，可通过安全 file endpoint 显示本地图片预览，点击图片打开右侧详情 drawer，drawer 支持关闭按钮、遮罩和 ESC 关闭，并支持多选删除本地文件和 SQLite 索引
 - Settings 页已真实对接 public settings list/save API、Pixiv test、DeepSeek test，secret 显示保持 masked，并按通用/外观/Pixiv/DeepSeek/Storage 分类展示
-- Home 页已真实复用 `GET /api/tasks`、`GET /api/images`、`GET /api/settings` 展示最近任务、状态摘要、最近 normal 图片 banner、快速入口、配置状态和本地图库提示
-- Top10 / Random 仍未完成
+- Home 页已真实复用 `GET /api/tasks`、`GET /api/images`、`GET /api/settings` 展示最近 3 条任务、状态摘要、优先 normal 且横向候选的最近图片 banner、快速入口、配置状态、本地图库提示、Rust 核心驱动注解、性能观察和后续能力槽
+- Top10 / Random 仍未完成，但已从 v1.0.0 阻塞项转为后续 discovery modes
 
 已经完成：
 
@@ -74,13 +75,16 @@
 5. 增加 API smoke/integration 测试
 6. 首页从占位改为真实 dashboard，API 层未新增后端端点
 7. UI polish 第一版改造 Home / Download / Tasks / Gallery / Settings，API 层未新增后端端点
+8. UI formatting follow-up 修补 Home banner / panel spacing、Home command center、Smart tag chips、API client empty response guard、drawer/modal 可关闭性和移动端间距，API 层未新增后端端点
+9. v1.0.0 downloader-first final 状态确认：当前稳定闭环可作为正式版本，后续进入 v1.x / v2 进化方向讨论
 
 下一步候选：
 
-1. 推荐进入 **Phase 7B follow-up - Gallery Quality / Thumbnail Cache Slice**：先让 Gallery 在批量/智能下载后更好浏览，再继续扩展 Top10 / Random。
-2. Phase 7C 可做 Top10 / Random discovery modes，继续复用 Phase 5A/5B/6B 的统一数量/筛选策略：请求 limit/count、`default_batch_count=20`、`max_request_count=100`、settings `r18_policy`。
-3. Phase 7D 可做 task cancel/retry 和更清晰的 worker 诊断。
-4. 继续保持 API 层薄封装，不复制 `tasks` / `downloads` / `images` 仓储逻辑。
+1. v1.x 可进入 **Gallery Quality / Thumbnail Cache Slice**：先让 Gallery 在批量/智能下载后更好浏览，再继续扩展 Top10 / Random。
+2. v1.x 可做 Top10 / Random discovery modes，继续复用 Phase 5A/5B/6B 的统一数量/筛选策略：请求 limit/count、`default_batch_count=20`、`max_request_count=100`、settings `r18_policy`。
+3. v1.x 可做 task cancel/retry 和更清晰的 worker 诊断。
+4. v2 research track 可探讨高技术复杂度能力：本地图像语义索引、CLIP/向量检索、自动聚类、相似图去重、智能标签回写、地图/画廊空间化浏览等。
+5. 继续保持 API 层薄封装，不复制 `tasks` / `downloads` / `images` 仓储逻辑。
 
 ## 必读文件顺序
 
@@ -182,28 +186,38 @@ PIXIV_PHPSESSID=... ./tests/e2e/live_single_download.sh
 4. docs/specs/traceability.md 里与本次任务相关的 REQ 行
 
 当前锚点：
-- Phase 7B - UI Layout / Interaction Polish 第一版已完成。
-- 单图下载、Author Batch、Bookmarks Batch、Smart Retrieval Parse -> 编辑标签 -> Enqueue smart download 均已可用并经用户手动检查。
-- Home、Download、Tasks、Gallery、Settings 已接入真实 API；Home 复用 tasks/images/settings API 展示工作台状态且不暴露 secret。
-- 当前 UI polish：Download tabs 工作台、Gallery 右侧详情 drawer、Tasks 详情 modal 与展开更多、Settings 分类面板、Home normal 最近图 banner。
-- 后端 downloader-first 核心稳定，但 Top10/Random、缩略图缓存、任务 cancel/retry、图片编辑/map 仍未完成。
+- 当前项目已确认可作为 v1.0.0 Downloader-First Final。
+- 单图下载、Author Batch、Bookmarks Batch、Smart Retrieval Parse -> 编辑标签/chips -> Enqueue smart download 均已可用并经用户手动检查或确定性检查。
+- Home、Download、Tasks、Gallery、Settings 已接入真实 API；Home 是 command center，包含最近 3 条任务、normal 横向候选 banner、Rust Core Driver 注解、Performance Watch 和后续能力槽。
+- 当前 UI polish：Download tabs 工作台、Gallery 右侧详情 drawer、Tasks 详情 modal 与展开更多、Settings 分类面板、Home command center。
+- 后端 downloader-first 核心稳定；Top10/Random、缩略图缓存、任务 cancel/retry、图片编辑/map、语义检索等已经转为 v1.x / v2 进化方向，不再阻塞 v1.0.0。
 - 默认下载目录是项目 output/，secret 只允许运行时配置，禁止写入 Pixiv cookie 或 DeepSeek key。
 - live Pixiv / live LLM 测试保持 opt-in。
 
-本次优先任务建议：Phase 7B follow-up - Gallery Quality / Thumbnail Cache Slice。
-只在需要实现 Gallery thumbnail/cache 时再读取这些文件：
+本轮目标：围绕 v1.0.0 之后的进化与优化方向做方案讨论，优先选择一个高技术复杂度、产品收益明显、符合本地优先路线的功能方向。
+
+候选方向可以包括但不限于：
+- Gallery Quality / Thumbnail Cache：缩略图缓存、懒加载、批量图片浏览性能。
+- Discovery Modes：Top10 / Random，复用现有 batch task substrate。
+- Task Control：cancel/retry、失败重试、worker 诊断。
+- Semantic Retrieval：本地图像语义索引、CLIP/vector search、相似图去重、自动聚类、智能标签回写。
+- Spatial Gallery：图片地图、二维空间浏览、收藏/标签组织视图。
+
+只在确定要实现某个方向后，再读取相关代码文件。常见入口：
 - 后端图片/图库：src/backend/src/images/mod.rs
-- 后端 API：src/backend/src/api.rs
+- 后端任务：src/backend/src/tasks/mod.rs
+- 后端 Pixiv/API：src/backend/src/pixiv/mod.rs、src/backend/src/api.rs
 - 文件路径/安全：src/backend/src/storage/mod.rs
 - DB migration：src/backend/migrations/0001_init.sql
-- 前端 Gallery：src/frontend/app/gallery/page.tsx
-- 前端 API client：src/frontend/lib/api.ts
-- Gallery 样式：src/frontend/app/globals.css
-- 测试入口：tests/run_local.sh、tests/stage/phase4d_gallery_file_api.sh、tests/stage/phase4e_gallery_delete.sh
+- 前端 Home/Gallery/Download/Tasks：src/frontend/app/page.tsx、src/frontend/app/gallery/page.tsx、src/frontend/app/download/page.tsx、src/frontend/app/tasks/page.tsx
+- 前端 API client/style：src/frontend/lib/api.ts、src/frontend/app/globals.css
+- 测试入口：tests/run_local.sh、tests/stage/*.sh
 
 工作方式：
-- 先给 thumbnail/cache follow-up 的最小实现清单并确认是否有明显风险。
-- 实现时 API 层保持薄封装，业务逻辑放 images/storage 或专门 query/cache 模块。
+- 先判断候选方向是否适合进入 v1.x 还是 v2 research track。
+- 讨论阶段不要直接大改代码；先输出目标、用户价值、技术难点、风险、最小可验证切片。
+- 一旦用户选定要实现的方向，再给最小实现清单并开始实现。
+- 实现时 API 层保持薄封装，业务逻辑放领域模块；新增测试尽量关联 REQ-*。
 - 增加确定性测试和阶段脚本，最后运行相关测试，必要时再运行 ./tests/run_local.sh。
 - 同步 README.md、docs/progress.md、docs/CONTEXT_HANDOFF.md、docs/specs/api-contract.md、docs/specs/traceability.md、tests/README.md。
 - 清理文件前只生成候选清单，等待用户确认。

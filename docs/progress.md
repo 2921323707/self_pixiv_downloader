@@ -6,9 +6,9 @@ Last updated: 2026-05-23
 
 The project is anchored on a downloader-first implementation path.
 
-Current phase: **Phase 7B - UI Layout / Interaction Polish** first pass complete.
+Current phase: **v1.0.0 Downloader-First Final** complete.
 
-The core Pixiv single-work download path is proven with mock tests, one live Pixiv smoke test, DB-aware local indexing, task-state persistence, deterministic stage/integration test scripts, a thin Axum API wrapper, an in-process Tokio background queue/worker, a Next.js frontend scaffold, minimal gallery/settings/task-list data APIs, settings-backed Pixiv cookie/download-root resolution for frontend-initiated downloads, secure local image file serving for Gallery previews, Gallery hard-delete file/index cleanup, author batch download, bookmark batch download, DeepSeek-backed smart prompt parsing, smart tag-search batch download, a Home dashboard backed by real task/image/settings APIs, and a first UI polish pass across Home/Download/Tasks/Gallery/Settings.
+The core Pixiv single-work download path is proven with mock tests, one live Pixiv smoke test, DB-aware local indexing, task-state persistence, deterministic stage/integration test scripts, a thin Axum API wrapper, an in-process Tokio background queue/worker, a Next.js frontend workbench, gallery/settings/task-list data APIs, settings-backed Pixiv cookie/download-root resolution for frontend-initiated downloads, secure local image file serving for Gallery previews, Gallery hard-delete file/index cleanup, author batch download, bookmark batch download, DeepSeek-backed smart prompt parsing, smart tag-search batch download, a Home dashboard backed by real task/image/settings APIs, and UI polish across Home/Download/Tasks/Gallery/Settings. This is now accepted as the v1.0.0 downloader-first final shape.
 
 Manual browser anchor on 2026-05-22: Settings-saved Pixiv credential plus a single Pixiv ID submitted from the frontend successfully downloaded a work, completed the task flow, and wrote the file locally. User also manually validated Author Batch and Bookmarks Batch through the frontend.
 
@@ -18,9 +18,13 @@ Manual browser anchor on 2026-05-23: Home Dashboard loaded through the local fro
 
 Implementation anchor on 2026-05-23: Phase 7B UI polish changed Download into a tabbed workbench, Gallery image details into a right-side drawer, Tasks details into a centered modal with the recent list defaulting to 10 rows plus expand-more, Settings into categorized panels, and Home into a less cramped workbench with a recent normal image banner. No new backend APIs were required.
 
+Implementation anchor on 2026-05-23: Phase 7B follow-up refined the first polish pass without adding backend APIs. Home now selects banner candidates from normal wide-ish images first and falls back to recent normal images, Recent Tasks is capped to three rows, Recent Downloads / Configuration panel actions align to stable footers, and the dashboard includes Rust Core Driver annotations, Performance Watch, and next capability slots. Smart supports manual positive/negative tag chips before enqueueing `/api/smart/download`, API client responses handle empty/non-JSON bodies with readable errors, and Gallery drawer / Tasks modal can close via button, backdrop, or ESC.
+
+Release anchor on 2026-05-23: the project is considered ready to freeze as **v1.0.0 Downloader-First Final**. The release scope is the stable local downloader/indexer/workbench loop, not every future product idea. Thumbnail cache, Top10/Random discovery modes, cancel/retry, richer edit/map APIs, and semantic search remain valid v1.x / v2 evolution tracks rather than v1.0.0 blockers.
+
 ## Current Reality Check
 
-Backend status: the downloader-first backend core is solid for the current vertical slice, but the full product backend is not complete yet.
+Backend status: the downloader-first backend core is solid for the v1.0.0 vertical slice. The full long-term product backend is intentionally broader than v1.0.0.
 
 Completed backend slice:
 
@@ -45,13 +49,13 @@ Completed backend slice:
 - Sequential multi-item worker dispatch with per-item diagnostics and `completed_with_errors`.
 - Batch default count setting: `default_batch_count`, default `20`, capped by `max_request_count`.
 
-Backend still pending:
+Post-v1 backend evolution candidates:
 
 - Generated thumbnail cache APIs.
 - Top10 / random batch modes.
 - Richer image preview, edit, and map APIs.
 
-Frontend status: the current frontend is a working scaffold, not a full product UI.
+Frontend status: the current frontend is a working v1.0.0 workbench UI, not the final form of every future product surface.
 
 - Real integration exists for single-download submission, bookmark batch submission, author batch submission, Smart Retrieval parse preview and smart batch enqueue, settings-backed Pixiv cookie/download directory, DeepSeek settings/test, task-id polling, task list, gallery metadata, Gallery delete, and public settings list/save.
 - Home now shows a real dashboard by reusing `GET /api/tasks`, `GET /api/images`, and `GET /api/settings`, including a recent normal image banner.
@@ -63,7 +67,7 @@ Frontend status: the current frontend is a working scaffold, not a full product 
 
 ## Current Task Status
 
-The Phase 7B UI Layout / Interaction Polish first pass is complete.
+The v1.0.0 Downloader-First Final shape is complete.
 
 | Task | Status | Evidence |
 | --- | --- | --- |
@@ -85,6 +89,7 @@ The Phase 7B UI Layout / Interaction Polish first pass is complete.
 | Convert Tasks detail to modal and default recent list to 10 | Done | `src/frontend/app/tasks/page.tsx`, `src/frontend/app/globals.css` |
 | Convert Settings to categorized panels | Done | `src/frontend/app/settings/page.tsx`, `src/frontend/app/globals.css` |
 | Add Phase 7B frontend scaffold anchors | Done | `tests/stage/frontend_scaffold.sh` |
+| Confirm v1.0.0 downloader-first final | Done | README / handoff / progress release anchor |
 | Add task list API | Done | `src/backend/src/tasks/mod.rs`, `src/backend/src/api.rs` |
 | Wire Gallery / Settings / Tasks to real data | Done | `src/frontend/app/gallery/page.tsx`, `src/frontend/app/settings/page.tsx`, `src/frontend/app/tasks/page.tsx` |
 | Add Phase 4B deterministic script | Done | `tests/stage/phase4b_data_api.sh` |
@@ -551,14 +556,14 @@ Practical meaning:
 
 ## Immediate Next Implementation Step
 
-Recommended next stage: **Phase 7B follow-up - Gallery Quality / Thumbnail Cache Slice**.
+Recommended next stage: **v1.x / v2 evolution planning**.
 
 Reason:
 
-- The manual single-download flow, Gallery preview loop, author batch flow, bookmark batch flow, and smart batch flow now work through the same downloader-first substrate.
-- Batch and smart retrieval will quickly increase local image volume, so Gallery needs thumbnail caching and browsing ergonomics before adding more discovery sources.
-- Gallery already has secure preview and hard-delete, making it the best next place to improve product feel without destabilizing downloader core.
-- Top10 / Random remain useful, but they add more ingestion volume before the browsing surface is ready.
+- The manual single-download flow, Gallery preview/delete loop, author batch flow, bookmark batch flow, and smart batch flow now work through the same downloader-first substrate.
+- v1.0.0 can be treated as complete; next work should be selected for product leverage or technical depth, not to patch a release blocker.
+- Practical v1.x candidates: thumbnail cache, Gallery browsing ergonomics, Top10 / Random discovery, task cancel/retry.
+- High-complexity v2 candidates: local semantic image index, CLIP/vector search, automatic clustering, similarity dedupe, tag enrichment, and map/spatial gallery exploration.
 
 Gallery Delete completed:
 
@@ -600,11 +605,12 @@ Phase 7B UI polish completed:
 5. Add a Home recent normal image banner while keeping the page a practical workbench.
 6. Add deterministic frontend scaffold anchors for the polish pass; no new backend API was needed.
 
-Recommended next planning options:
+Post-v1 planning options:
 
-1. Phase 7B follow-up: Gallery thumbnail cache, richer filters, and browsing quality pass.
-2. Phase 7C: Top10 / random discovery modes using the existing batch task template.
-3. Phase 7D: Task operations: cancel/retry and clearer worker diagnostics.
+1. v1.x Gallery quality: thumbnail cache, richer filters, and browsing quality pass.
+2. v1.x discovery: Top10 / random discovery modes using the existing batch task template.
+3. v1.x task operations: cancel/retry and clearer worker diagnostics.
+4. v2 research: semantic image indexing, vector search, automatic clustering, similarity dedupe, and tag enrichment.
 
 Phase 7B follow-up proposed todo:
 
@@ -615,8 +621,10 @@ Phase 7B follow-up proposed todo:
 5. Tests: deterministic thumbnail generation/cache tests, API file-safety tests, Gallery frontend typecheck/build.
 6. Docs: update progress, API contract, traceability, and cleanup candidates after implementation.
 
-Optional batch-source backlog:
+Optional post-v1 backlog:
 
-1. Phase 5C: Top10 refresh/download.
-2. Phase 5D: random surprise.
-3. Later: generated thumbnails, richer gallery edit/map APIs.
+1. Gallery thumbnail/cache and browsing ergonomics.
+2. Top10 refresh/download.
+3. Random surprise.
+4. Task cancel/retry.
+5. Richer gallery edit/map APIs.

@@ -344,7 +344,20 @@ export async function testDeepSeekConnection(): Promise<DeepSeekConnectionTestRe
 }
 
 async function unwrap<T>(response: Response): Promise<T> {
-  const payload = (await response.json()) as ApiEnvelope<T> | ApiErrorEnvelope;
+  const raw = await response.text();
+  if (!raw.trim()) {
+    throw new Error(
+      response.ok ? "API returned an empty response" : response.statusText || "Request failed"
+    );
+  }
+
+  let payload: ApiEnvelope<T> | ApiErrorEnvelope;
+  try {
+    payload = JSON.parse(raw) as ApiEnvelope<T> | ApiErrorEnvelope;
+  } catch {
+    const fallback = raw.trim().slice(0, 280) || response.statusText || "Request failed";
+    throw new Error(response.ok ? "API returned invalid JSON" : fallback);
+  }
 
   if (!response.ok || "error" in payload) {
     const message = "error" in payload ? payload.error.message : response.statusText;
