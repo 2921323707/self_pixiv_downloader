@@ -1,0 +1,65 @@
+<svg width="1180" height="360" viewBox="0 0 1180 360" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Pixiv Platform v1.0.0 hero</title>
+  <desc id="desc">Animated dashboard style banner for the downloader-first Pixiv platform.</desc>
+  <style>
+    .pulse { animation: pulse 2.8s ease-in-out infinite; transform-origin: center; }
+    .flow { stroke-dasharray: 12 18; animation: flow 3.6s linear infinite; }
+    .rise { animation: rise 4.4s ease-in-out infinite; }
+    .rise2 { animation: rise 4.4s ease-in-out infinite .55s; }
+    .glow { animation: glow 3s ease-in-out infinite; }
+    @keyframes pulse { 0%,100% { opacity: .55; transform: scale(.98); } 50% { opacity: 1; transform: scale(1.02); } }
+    @keyframes flow { to { stroke-dashoffset: -60; } }
+    @keyframes rise { 0%,100% { transform: translateY(0); opacity: .72; } 50% { transform: translateY(-8px); opacity: 1; } }
+    @keyframes glow { 0%,100% { filter: drop-shadow(0 0 0 rgba(0,150,183,.1)); } 50% { filter: drop-shadow(0 0 14px rgba(0,150,183,.38)); } }
+    text { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  </style>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1180" y2="360" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F7FBFD"/>
+      <stop offset=".45" stop-color="#E8F7FB"/>
+      <stop offset="1" stop-color="#FFFFFF"/>
+    </linearGradient>
+    <linearGradient id="cyan" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#0096B7"/>
+      <stop offset="1" stop-color="#70E4F6"/>
+    </linearGradient>
+    <linearGradient id="ink" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#17232B"/>
+      <stop offset="1" stop-color="#3157C9"/>
+    </linearGradient>
+  </defs>
+  <rect width="1180" height="360" rx="28" fill="url(#bg)"/>
+  <path d="M0 92H1180M0 184H1180M0 276H1180M118 0V360M236 0V360M354 0V360M472 0V360M590 0V360M708 0V360M826 0V360M944 0V360M1062 0V360" stroke="#D8E7EE" stroke-opacity=".45"/>
+  <circle class="pulse" cx="1032" cy="74" r="96" fill="#E8F7FB"/>
+  <circle class="pulse" cx="136" cy="286" r="74" fill="#E8F7FB"/>
+  <rect x="48" y="42" width="1084" height="276" rx="22" fill="white" fill-opacity=".78" stroke="#D8E7EE"/>
+  <g class="glow">
+    <rect x="82" y="76" width="354" height="208" rx="18" fill="#17232B"/>
+    <rect x="104" y="100" width="310" height="96" rx="14" fill="url(#cyan)" opacity=".95"/>
+    <rect class="rise" x="122" y="216" width="52" height="40" rx="8" fill="#70E4F6"/>
+    <rect class="rise2" x="188" y="204" width="52" height="52" rx="8" fill="#0096B7"/>
+    <rect class="rise" x="254" y="188" width="52" height="68" rx="8" fill="#35A853"/>
+    <rect class="rise2" x="320" y="172" width="52" height="84" rx="8" fill="#3157C9"/>
+  </g>
+  <path class="flow" d="M458 180C520 180 520 116 582 116H668" stroke="#0096B7" stroke-width="4" stroke-linecap="round"/>
+  <path class="flow" d="M458 180C520 180 520 244 582 244H668" stroke="#3157C9" stroke-width="4" stroke-linecap="round"/>
+  <g>
+    <rect x="686" y="86" width="162" height="62" rx="14" fill="#FBFDFE" stroke="#D8E7EE"/>
+    <circle cx="716" cy="117" r="10" fill="#35A853"/>
+    <text x="738" y="113" fill="#17232B" font-size="15" font-weight="800">Tasks</text>
+    <text x="738" y="133" fill="#60717B" font-size="12" font-weight="700">queue + logs</text>
+    <rect x="686" y="178" width="162" height="62" rx="14" fill="#FBFDFE" stroke="#D8E7EE"/>
+    <circle cx="716" cy="209" r="10" fill="#0096B7"/>
+    <text x="738" y="205" fill="#17232B" font-size="15" font-weight="800">Gallery</text>
+    <text x="738" y="225" fill="#60717B" font-size="12" font-weight="700">preview + delete</text>
+    <rect x="876" y="132" width="186" height="62" rx="14" fill="#FBFDFE" stroke="#D8E7EE"/>
+    <circle cx="906" cy="163" r="10" fill="#3157C9"/>
+    <text x="928" y="159" fill="#17232B" font-size="15" font-weight="800">Smart Retrieval</text>
+    <text x="928" y="179" fill="#60717B" font-size="12" font-weight="700">prompt to tags</text>
+  </g>
+  <text x="82" y="346" fill="#60717B" font-size="13" font-weight="750">Downloader-first local platform</text>
+  <text x="480" y="92" fill="#0096B7" font-size="15" font-weight="900" letter-spacing=".18em">V1.0.0 FINAL</text>
+  <text x="480" y="132" fill="#17232B" font-size="38" font-weight="900">Pixiv AI Downloader Platform</text>
+  <text x="480" y="166" fill="#60717B" font-size="17" font-weight="700">Rust backend + SQLite index + Next.js workbench + smart tag retrieval.</text>
+  <text x="480" y="284" fill="#17232B" font-size="15" font-weight="850">Single / Author / Bookmarks / Smart / Tasks / Gallery / Settings</text>
+</svg>

@@ -1,94 +1,122 @@
 # Pixiv AI 下载与智能检索平台
 
-这是一个本地优先的个人 Pixiv 下载、索引、检索与图库管理项目。
+<p align="center">
+  <img src="docs/assets/readme-hero.svg" alt="Pixiv AI Downloader Platform v1.0.0" width="100%" />
+</p>
 
-当前项目采用 **spec-coding** 驱动方式：先把需求、状态、数据库、任务流、API、测试和实现路径写清楚，再让代码围绕这些规格推进。每个关键实现都尽量能追溯到 `REQ-*` 需求编号。
+这是一个 **本地优先** 的个人 Pixiv 下载、索引、检索与图库管理平台。项目已经进入 **v1.0.0 Downloader-First Final**：核心下载、SQLite 索引、任务追踪、图库预览、设置管理、作者/收藏批量下载、Smart Retrieval 智能标签检索和 Next.js 工作台已经形成完整闭环。
 
-## 当前状态
+如果你是来体验或帮忙提 issue 的朋友，可以先从这三件事开始：
 
-当前阶段：**v1.0.0 Downloader-First Final** 已完成。
+1. 按 [快速入口](#快速入口) 跑起来。
+2. 在 Settings 配置运行时 Pixiv cookie 和下载目录。
+3. 试用 Single / Author / Bookmarks / Smart / Gallery / Tasks，并把问题或建议提到 GitHub Issues。
 
-也就是：核心下载脚本已经跑通，下载结果已经进入 SQLite，并完成“文件 + 数据库”的双重去重、可追溯索引、任务状态持久化、确定性测试脚本结构、薄 Axum API wrapper、in-process Tokio 后台任务队列 / worker、Next.js 前端工作台、作者/收藏两个批量下载入口、Gallery 预览 / drawer / 多选删除、本地设置与 secret mask、自然语言智能解析标签后按 Pixiv 标签搜索并创建 smart 批量下载任务，以及 Home command center 化。按当前 downloader-first 产品边界，可以作为 **v1.0.0 最终形态**。
+## v1.0.0 已完成
 
-当前边界：
+当前版本的目标不是做一个“大而全”的 Pixiv 客户端，而是先做一个稳定、可追溯、可测试、能真实使用的 downloader-first 本地平台。
 
-- 后端当前完成的是 downloader-first 的核心 vertical slice：单作品下载、DB 持久化、任务追踪、单作品下载 API、作者批量下载 API、收藏批量下载 API、smart 标签搜索批量下载 API、任务轮询 API、任务列表 API、图库 metadata 查询 API、图库安全文件预览 API、图库删除 API、settings public list/save API、settings-backed Pixiv cookie / 下载目录解析、Pixiv connection test API、DeepSeek connection test API、Smart Parse API、后台 worker。
-- v1.0.0 不再把 Top10、Random、生成缩略图缓存、任务取消、图片编辑和 map API 作为阻塞项；这些进入 v1.x / v2 进化方向。
-- 前端当前是可运行的 v1.0.0 工作台 UI：Home、Download、Tasks、Gallery、Settings 已对接现有 API；Home 展示最近 3 条任务、状态摘要、筛选后的最近 normal 横向候选图片 banner、Rust Core Driver 注解、Performance Watch、快速入口、Pixiv cookie / DeepSeek key / download_base_path 配置状态和本地图库提示；Settings 保存的 Pixiv cookie / 下载目录会影响后续下载并按配置分类展示；Download 已支持单作品、收藏批量、作者批量、Smart Retrieval 标签解析、chip 编辑标签、手动标签 smart 批量任务入队，并改为顶部工具 tabs 工作台；Gallery 可以显示本地下载图片预览、右侧详情 drawer 和多选删除；Tasks 默认展示 10 条 Recent Tasks，点击后用居中 modal 动态加载进度/items/logs。Top10 / Random 属于后续 discovery modes。
+| 能力 | 状态 |
+| --- | --- |
+| 单作品下载 | 已完成，支持任务追踪和 SQLite 入库 |
+| 作者批量下载 | 已完成，复用批量 task worker |
+| 收藏批量下载 | 已完成，支持默认数量和上限控制 |
+| Smart Retrieval | 已完成，支持 DeepSeek parse、手动 tag chips、Pixiv tag search 批量下载 |
+| Gallery | 已完成 metadata 列表、安全文件预览、右侧 drawer、多选删除 |
+| Tasks | 已完成任务列表、任务详情 modal、items/logs/progress |
+| Settings | 已完成 public settings、secret mask、Pixiv/DeepSeek connection test |
+| Home | 已完成 command center、最近任务、normal banner、Rust Core Driver 注解、Performance Watch |
+| 测试 | 已完成 backend unit、stage、integration、smoke、frontend scaffold gates |
 
-已经完成：
+## 产品形态
 
-- downloader-first 架构与规格文档
-- Rust 后端核心脚手架
-- mock 单作品下载测试
-- 真实 Pixiv 单作品下载冒烟测试，测试作品 `144920810`
-- SQLite 初始迁移 `0001_init.sql`
-- DB migration runner
-- 图片 metadata / tag / source repository
-- settings repository，并支持 secret mask
-- DB-aware downloader：下载前 DB 查重、缺文件修复、已有文件索引、写入 images/image_tags/image_sources
-- task repository / task logs / task items，并支持单作品下载任务生命周期
-- 本地测试脚本、阶段测试脚本与 SQLite 集成测试脚本
-- Axum API wrapper：`POST /api/download/single`、`GET /api/tasks/{task_id}`
-- 后台任务队列：`POST /api/download/single` enqueue 后快速返回，worker 后台执行下载任务
-- 前端 scaffold：Home / Download / Tasks / Gallery / Settings，下载页和任务页已对接现有 API
-- Phase 4B 最小数据 API：`GET /api/images`、`GET /api/images/{image_id}`、`GET /api/settings`、`PUT /api/settings/{key}`、`GET /api/tasks`
-- Phase 4C 前端配置下载闭环：worker 从 settings 读取 `pixiv_cookie` 和 `download_base_path`，并提供 `POST /api/settings/test/pixiv`
-- Phase 4D Gallery 文件预览闭环：`GET /api/images/{image_id}/file` 安全读取本地文件，Gallery 卡片和详情可以显示真实下载图片
-- Phase 4E Gallery 删除闭环：`DELETE /api/images/{image_id}`、`POST /api/images/delete-batch`，删除本地文件并清理 SQLite 索引
-- Phase 5A Author 批量下载闭环：`POST /api/downloads/author`、作者作品发现、批量 task_items、顺序 worker、部分失败诊断、Download 作者表单
-- Phase 5B Bookmarks 批量下载闭环：`POST /api/downloads/bookmarks`、当前用户收藏发现、批量 task_items、顺序 worker、部分失败诊断、Download 收藏表单
-- Phase 6A Smart Retrieval Parse 闭环：`POST /api/smart/parse`、`POST /api/settings/test/deepseek`、DeepSeek key/base URL/model settings、Download 智能解析预览
-- Phase 6B Smart Retrieval Download 闭环：`POST /api/smart/download`、Pixiv 标签搜索、`smart` task worker、`smart_retrievals` provenance、Download 智能下载入队
-- Phase 7A Home Dashboard 首页真实化：复用 `GET /api/tasks`、`GET /api/images`、`GET /api/settings` 展示工作台状态，不暴露 secret
-- Phase 7B UI Layout / Interaction Polish 第一版：Download tabs 工作台、Gallery 右侧详情 drawer、Tasks 详情 modal 与展开更多、Settings 分类面板、Home normal 最近图 banner
-- Phase 7B follow-up UI Formatting / Interaction Repair：Home banner 前端优先筛选 normal 横向候选图，Recent Downloads / Configuration 底部动作对齐，并重构为 command center + Rust Core Driver + Performance Watch + capability slots；Smart 支持正/负 tag chip 手动输入并复用 `/api/smart/download`，API client 对空/非 JSON 响应给出可读错误；Gallery drawer 和 Tasks modal 支持遮罩/ESC 关闭；补移动端间距与确定性前端锚点
-- `default_batch_count` 设置项：批量请求未传 limit 时默认使用 20，仍受 `max_request_count` 上限约束
-- Home / Gallery / Settings / Tasks 前端页面已从占位切到真实 API 数据
-- API smoke 测试脚本
-- Phase 3B queue 测试脚本
-- Phase 4B data API 测试脚本
-- Phase 4C configured download 测试脚本
-- Phase 4D gallery file API 测试脚本
-- Phase 4E gallery delete 测试脚本
-- Phase 5A author batch 测试脚本
-- Phase 5B bookmark batch 测试脚本
-- Phase 6A smart parse 测试脚本
-- Phase 6B smart download 测试脚本
-- Phase 7B frontend scaffold UI polish 锚点检查
-- 文档地图与进度锚点
+### Home Command Center
 
-当前本地测试基线：
+Home 不再是占位页，而是项目控制台：
+
+- 最近 3 条任务和状态摘要
+- 最近 normal 横向候选图片 banner
+- Pixiv cookie / DeepSeek key / download path 配置状态
+- Rust Core Driver 注解
+- Performance Watch
+- v1.x / v2 后续能力槽
+
+### Download Workbench
+
+Download 是一个真实工具台：
+
+- Single：输入 Pixiv ID 入队下载
+- Author：按作者 UID 批量下载
+- Bookmarks：按当前用户收藏批量下载
+- Smart：自然语言解析 tags，或手动添加正/负 tag chips 后入队下载
+
+### Gallery / Tasks / Settings
+
+- Gallery 使用后端安全 file endpoint 展示本地图片，不暴露原始路径。
+- Tasks 可以查看进度、items、logs 和失败诊断。
+- Settings 中的 secret 只显示 masked 状态，真实 Pixiv cookie / DeepSeek key 只允许运行时配置。
+
+## 技术栈
+
+| 层 | 技术 |
+| --- | --- |
+| Backend | Rust, Axum, Tokio |
+| Database | SQLite, migrations, repository modules |
+| Frontend | Next.js, React, TypeScript |
+| Downloader | Pixiv client abstraction, DB-aware storage |
+| AI | DeepSeek-compatible Smart Parse, Pixiv tag search |
+| Quality | deterministic stage scripts, integration tests, smoke tests |
+
+项目采用 **spec-coding** 驱动方式：需求、状态、数据库、任务流、API、测试和实现路径都写在 `docs/` 下，关键实现尽量追溯到 `REQ-*`。
+
+## 当前边界
+
+v1.0.0 已经完成 downloader-first 本地平台闭环。以下内容不是 v1.0.0 blocker，而是后续进化方向：
+
+- Top10 / Random discovery modes
+- Gallery thumbnail cache
+- task cancel / retry
+- 更完整的图片编辑和 map API
+- 本地图像语义索引、向量检索、相似图去重、自动聚类等高复杂度能力
+
+## 测试基线
+
+当前本地基线：
 
 ```text
 ./tests/run_local.sh
 82 backend unit tests passed; Phase 2A checks passed; Phase 2C checks passed; backend SQLite integration checks passed; backend API smoke checks passed; Phase 3B queue checks passed; Phase 4B data API checks passed; Phase 4C configured download checks passed; Phase 4D gallery file API checks passed; Phase 4E gallery delete checks passed; Phase 5A author batch checks passed; Phase 5B bookmark batch checks passed; Phase 6A smart parse checks passed; Phase 6B smart download checks passed; frontend scaffold checks passed; 0 failed
 ```
 
-手动浏览器锚点：
+已手动验证：
 
-- 2026-05-22：已确认前端输入 Pixiv 作品 ID 可以成功下载，任务流完成并写入本地文件。
-- 2026-05-22：已确认 Author Batch 和 Bookmarks Batch 都可以从前端触发并完成下载。
-- 2026-05-23：Smart Retrieval 的 Parse -> 编辑标签 -> Enqueue smart download 流程已经过用户手动检查，当前没有明显问题。
-- 2026-05-23：Home Dashboard 已在本地浏览器确认可通过真实 API 展示任务、图库预览和配置状态，控制台无错误。
-- 2026-05-23：Phase 7B UI polish 第一版已完成确定性前端检查：Download tabs、Gallery drawer、Tasks modal、Settings 分类、Home normal banner。
-- 2026-05-23：Phase 7B follow-up 已完成确定性前端检查：Home banner 候选筛选、Recent Tasks 收缩到 3 条、Home command center / Rust Core Driver / Performance Watch、Smart tag chips、Gallery drawer / Tasks modal 关闭交互和移动端布局锚点。
-- Gallery 当前已经可以通过安全 file endpoint 显示真实图片预览。
-- Gallery 当前已经支持多选删除，删除时会同步移除本地文件和 SQLite 索引。
-- Smart Retrieval 当前已经可以把自然语言解析成标签计划，并从标签计划创建 smart 批量下载任务；用户已反馈 DeepSeek 转换偶发小错，当前策略改为日文 Pixiv 标签优先、英文兜底，且 R18 策略以用户选择为准。
+- 前端输入 Pixiv 作品 ID 可以成功下载并写入本地文件。
+- Author Batch 和 Bookmarks Batch 可从前端触发并完成下载。
+- Smart Retrieval 的 Parse -> 编辑 tags/chips -> Enqueue smart download 流程可用。
+- Home / Download / Tasks / Gallery / Settings 均已接入真实 API。
 
-v1.0.0 结论：
+## 欢迎提 Issue
 
-- 可以冻结为当前项目的第一个正式版本：本地优先、可追溯、可测试、可手动使用的 Pixiv downloader-first 平台。
-- 该版本的成熟度来自稳定链路，而不是功能面面俱到：单作品 / 作者 / 收藏 / Smart tag search 下载、任务追踪、图库预览删除、Settings runtime 配置和 Home 工作台都已形成闭环。
-- 后续工作建议以“高技术复杂度能力”或“v1.x 体验增强”立项，不再把它们视为 v1.0.0 未完成事项。
+如果你是 pull 下来试用的朋友，最希望你帮忙反馈：
 
-下一阶段推荐：
+- 安装/启动过程是否顺畅
+- Pixiv cookie / 下载目录 / DeepSeek key 配置是否容易理解
+- Single / Author / Bookmarks / Smart 哪个流程最容易出错
+- Gallery 在图片较多时是否卡顿
+- UI 上是否有文字溢出、按钮难点、drawer/modal 不好关闭等问题
+- 你最希望 v1.x 或 v2 加什么高级功能
 
-- **v1.x Evolution - Gallery Quality / Thumbnail Cache**：补缩略图缓存和 Gallery 浏览性能，降低批量/智能下载后图片变多带来的前端压力。
-- **v1.x Discovery Modes**：继续做 Top10 / Random discovery modes。
-- **v1.x Task Control**：补任务 cancel/retry、失败重试和更清晰的 worker 诊断。
-- **v2 Research Track**：可探讨高复杂度能力，例如本地图像语义索引、CLIP/向量检索、自动聚类、相似图去重、智能标签回写、地图/画廊空间化浏览等。
+提 issue 时最好附上：
+
+```text
+系统：
+运行命令：
+出问题的页面：
+期望行为：
+实际行为：
+终端错误或浏览器控制台错误：
+是否使用 live Pixiv / live LLM：
+```
 
 ## 快速入口
 
