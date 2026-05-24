@@ -14,6 +14,16 @@
 - Settings：配置 Pixiv cookie、DeepSeek key、下载目录、默认批量数量、R18 策略和主题。
 - Next.js 工作台：Home、Download、Tasks、Gallery、Settings 五个主要页面。
 
+## 部分页面展示
+### 首页
+![](./static/demoDisplay/index.png)
+
+### 智能检索批量下载
+![](./static/demoDisplay/download.png)
+
+### 任务监控面板
+![](./static/demoDisplay/taskReview.png)
+
 ## 技术栈
 
 - Backend: Rust 2024, Axum, Tokio, rusqlite, reqwest
