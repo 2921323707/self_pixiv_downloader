@@ -8,9 +8,9 @@
 
 ## 当前阶段
 
-当前阶段：**v1.0.0 Downloader-First Final** 已完成。
+当前阶段：**v1.0.0 Final Delivery** 已完成并冻结为当前交付版本。
 
-2026-05-22 手动浏览器锚点：用户已确认在前端输入 Pixiv 作品 ID 可以成功下载，并确认 Author Batch 和 Bookmarks Batch 可用。2026-05-23：Smart Retrieval 已从“解析标签”推进到“解析后入队 smart 批量下载”，并经用户手动检查当前没有明显问题。同日 Home Dashboard 已在本地浏览器确认可通过真实 API 展示任务、图库预览和配置状态，控制台无错误。2026-05-23：Phase 7B UI polish 已完成确定性前端检查，未新增后端 API。Phase 7B follow-up 已补 Home banner 前端候选筛选、Home panel 底部对齐、Home command center / Rust Core Driver / Performance Watch、Smart 正/负 tag chip 手动输入、API client 空/非 JSON 响应保护、Gallery drawer / Tasks modal 关闭交互和移动端布局锚点，仍未新增后端 API。2026-05-23：项目状态确认为 v1.0.0 downloader-first final，后续工作进入 v1.x / v2 进化讨论。
+2026-05-22 手动浏览器锚点：用户已确认在前端输入 Pixiv 作品 ID 可以成功下载，并确认 Author Batch 和 Bookmarks Batch 可用。2026-05-23：Smart Retrieval 已从“解析标签”推进到“解析后入队 smart 批量下载”，并经用户手动检查当前没有明显问题。同日 Home Dashboard 已在本地浏览器确认可通过真实 API 展示任务、图库预览和配置状态，控制台无错误。2026-05-23：Phase 7B UI polish 已完成确定性前端检查，未新增后端 API。Phase 7B follow-up 已补 Home banner 前端候选筛选、Home panel 底部对齐、Home command center / Rust Core Driver / Performance Watch、Smart 正/负 tag chip 手动输入、API client 空/非 JSON 响应保护、Gallery drawer / Tasks modal 关闭交互和移动端布局锚点，仍未新增后端 API。当前策略已调整为：冻结当前形态为 v1.0.0 final delivery，并由标准 `main` 分支承载交付主线。
 
 ## 当前真实边界
 
@@ -78,13 +78,12 @@ v1.x / v2 候选，不属于 v1.0.0 阻塞：
 8. UI formatting follow-up 修补 Home banner / panel spacing、Home command center、Smart tag chips、API client empty response guard、drawer/modal 可关闭性和移动端间距，API 层未新增后端端点
 9. v1.0.0 downloader-first final 状态确认：当前稳定闭环可作为正式版本，后续进入 v1.x / v2 进化方向讨论
 
-下一步候选：
+交付后维护策略：
 
-1. v1.x 可进入 **Gallery Quality / Thumbnail Cache Slice**：先让 Gallery 在批量/智能下载后更好浏览，再继续扩展 Top10 / Random。
-2. v1.x 可做 Top10 / Random discovery modes，继续复用 Phase 5A/5B/6B 的统一数量/筛选策略：请求 limit/count、`default_batch_count=20`、`max_request_count=100`、settings `r18_policy`。
-3. v1.x 可做 task cancel/retry 和更清晰的 worker 诊断。
-4. v2 research track 可探讨高技术复杂度能力：本地图像语义索引、CLIP/向量检索、自动聚类、相似图去重、智能标签回写、地图/画廊空间化浏览等。
-5. 继续保持 API 层薄封装，不复制 `tasks` / `downloads` / `images` 仓储逻辑。
+1. `main` 作为 v1.0.0 final delivery 主分支，优先接受文档、安装、验证、缺陷修复和小范围稳定性改动。
+2. Gallery Quality / Thumbnail Cache、Top10 / Random discovery、task cancel/retry、图片编辑/map、语义检索等不再作为 v1.0.0 缺口，只作为交付后的可选演进。
+3. 如开启新能力，先定义最小可验证切片，再补 specs、traceability、tests。
+4. 继续保持 API 层薄封装，不复制 `tasks` / `downloads` / `images` 仓储逻辑。
 
 ## 必读文件顺序
 
@@ -180,13 +179,13 @@ PIXIV_PHPSESSID=... ./tests/e2e/live_single_download.sh
 你在 /Users/Admin/Downloads/pixiv_platform 继续 Pixiv AI 下载与智能检索平台。
 
 请节省 token，不要全局浏览仓库。先只阅读：
-1. README.md 的“当前状态/手动浏览器锚点/下一阶段推荐”
+1. README.md 的“交付定位/交付范围/分支与发布策略”
 2. docs/CONTEXT_HANDOFF.md 的“当前阶段/当前真实边界/下一步候选/重要约束”
-3. docs/progress.md 的“Current Anchor/Immediate Next Implementation Step”
+3. docs/progress.md 的“Current Anchor/Delivery Status”
 4. docs/specs/traceability.md 里与本次任务相关的 REQ 行
 
 当前锚点：
-- 当前项目已确认可作为 v1.0.0 Downloader-First Final。
+- 当前项目已冻结为 v1.0.0 Final Delivery。
 - 单图下载、Author Batch、Bookmarks Batch、Smart Retrieval Parse -> 编辑标签/chips -> Enqueue smart download 均已可用并经用户手动检查或确定性检查。
 - Home、Download、Tasks、Gallery、Settings 已接入真实 API；Home 是 command center，包含最近 3 条任务、normal 横向候选 banner、Rust Core Driver 注解、Performance Watch 和后续能力槽。
 - 当前 UI polish：Download tabs 工作台、Gallery 右侧详情 drawer、Tasks 详情 modal 与展开更多、Settings 分类面板、Home command center。

@@ -71,7 +71,7 @@ Implementation paths are proposed for the planned frontend/backend split:
 | Implementation priority | Downloader-first | User emphasized core download script as most important |
 | V1 file layout | `{download_root}/originals/{pixiv_id}/{pixiv_id}_p{page}.{ext}` | Keeps source/category mutable in SQLite |
 | Test script baseline | `tests/run_local.sh`, `tests/unit/backend_unit.sh`, `tests/e2e/live_single_download.sh` | Keeps unit and e2e flows repeatable |
-| Current phase | Phase 7B UI Layout / Interaction Polish first pass complete; Gallery thumbnail cache remains recommended next | See `docs/progress.md` |
+| Current phase | v1.0.0 Final Delivery frozen on the downloader-first scope; optional evolution is no longer part of the v1.0.0 acceptance boundary | See `docs/progress.md` |
 | Manual frontend anchor | Single Pixiv ID, Author Batch, and Bookmarks Batch downloads succeed from browser as of 2026-05-22; Smart Retrieval parse/edit/enqueue is manually validated as of 2026-05-23; Home Dashboard loaded real local task/image/settings data on 2026-05-23 | Confirms Settings -> Download -> Tasks -> Gallery -> Home workbench path |
 
 ## Current Milestone Order
@@ -95,7 +95,8 @@ Implementation paths are proposed for the planned frontend/backend split:
 17. Completed: Phase 6B smart tag search and batch download.
 18. Completed: Phase 7A Home Dashboard.
 19. Completed: Phase 7B UI Layout / Interaction Polish first pass.
-20. Current next choice: Gallery thumbnail cache and browsing quality pass.
+20. Completed: v1.0.0 Final Delivery freeze on the downloader-first product boundary.
+21. Optional post-delivery evolution: Gallery thumbnail cache, Top10/Random discovery, task cancel/retry, richer gallery APIs, or semantic image research.
 
 ## Traceability Rule for Future Code
 

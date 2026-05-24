@@ -231,7 +231,7 @@ Tests:
 
 Requirements: `REQ-DL-002`, `REQ-DL-003`, `REQ-DL-004`, `REQ-DL-005`
 
-Status: Phase 5A and Phase 5B complete; Phase 5C planned next
+Status: Phase 5A and Phase 5B complete. Phase 5C Top10 and Phase 5D random remain optional post-v1.0.0 evolution, not delivery blockers.
 
 Deliverables:
 
@@ -239,8 +239,8 @@ Deliverables:
 - Shared sequential batch worker behavior with multiple task items. Done for author and bookmark batches.
 - Partial-failure accounting with `completed_with_errors`. Done for author and bookmark batches.
 - Phase 5B bookmark download through `POST /api/downloads/bookmarks`. Done.
-- Phase 5C daily Top10 refresh/download.
-- Phase 5D random surprise.
+- Optional post-delivery: Phase 5C daily Top10 refresh/download.
+- Optional post-delivery: Phase 5D random surprise.
 
 Tests:
 
@@ -276,16 +276,16 @@ Tests:
 
 Requirements: `REQ-UI-001` through `REQ-UI-006`, `REQ-THEME-001` through `REQ-THEME-005`
 
-Status: scaffold, Phase 4B data integration, Phase 4C settings-backed download flow, Phase 4D gallery file previews, Phase 5A author batch form, and Phase 5B bookmark batch form complete; remaining batch/smart flows pending
+Status: v1.0.0 frontend delivery complete for Home, Download, Tasks, Gallery, and Settings. Single, Author, Bookmarks, and Smart flows are wired to real APIs.
 
 Deliverables:
 
 - Next.js scaffold. Done.
 - Cyan Studio theme. Done.
-- Download center. Done for single-work API, bookmark batch API, and author batch API.
+- Download center. Done for single-work API, bookmark batch API, author batch API, and Smart Retrieval parse/download API.
 - Task panel. Done for task-id polling and recent task list.
-- Gallery MVP. Done for metadata list and secure original-file preview; generated thumbnail cache pending.
-- Settings page. Done for public list/save; connection test APIs pending.
+- Gallery MVP. Done for metadata list, secure original-file preview, right-side drawer, and delete flow; generated thumbnail cache remains optional post-delivery work.
+- Settings page. Done for public list/save, Pixiv connection test, DeepSeek connection test, and secret masking.
 
 Tests:
 

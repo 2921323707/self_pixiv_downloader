@@ -1,6 +1,6 @@
 # Phase 5 Batch Download Plan
 
-Status: Phase 5A author batch and Phase 5B bookmarks batch complete; Phase 5C Top10 is next.
+Status: Phase 5A author batch and Phase 5B bookmarks batch complete and included in v1.0.0 Final Delivery. Phase 5C Top10 and Phase 5D Random are optional post-delivery evolution tracks.
 
 Goal: extend the proven single-work pipeline into traceable multi-item acquisition tasks without weakening the downloader-first architecture.
 
@@ -12,9 +12,9 @@ In this project, "batch download" means any workflow that discovers multiple Pix
 | --- | --- | --- | --- | --- |
 | Author works | Pixiv author UID | Fetch works by author | Existing DB-aware downloader | Phase 5A complete |
 | Bookmarks | Limit, R18 policy/category | Fetch current user's bookmarks | Existing DB-aware downloader | Phase 5B complete |
-| Daily Top10 | refresh/download mode | Fetch ranking list | Optional selected/top download | Phase 5C next |
-| Random surprise | R18 policy and optional count | Deterministic random/search strategy | Existing DB-aware downloader | Phase 5D |
-| Natural language smart retrieval | Prompt, optional count override | DeepSeek parse -> tags/negative tags -> Pixiv search | Existing DB-aware downloader | Phase 6 |
+| Daily Top10 | refresh/download mode | Fetch ranking list | Optional selected/top download | Optional post-delivery |
+| Random surprise | R18 policy and optional count | Deterministic random/search strategy | Existing DB-aware downloader | Optional post-delivery |
+| Natural language smart retrieval | Prompt, optional count override | DeepSeek parse -> tags/negative tags -> Pixiv search | Existing DB-aware downloader | Phase 6B complete |
 
 Natural-language retrieval is grouped conceptually with batch acquisition, but implementation remains after the core batch task engine because it also depends on DeepSeek configuration, prompt parsing, and provenance persistence.
 
@@ -50,13 +50,13 @@ Initial image filtering:
 
 Phase 5 should not implement every batch source at once. The first slice should prove the shared batch task engine, then add source-specific discovery modes.
 
-Recommended order:
+Original recommended order:
 
 1. **Phase 5A: Author batch vertical slice**
 2. **Phase 5B: Bookmarks batch**
-3. **Phase 5C: Daily Top10 refresh/download**
-4. **Phase 5D: Random surprise**
-5. **Phase 6: Smart retrieval from natural language**
+3. **Phase 5C: Daily Top10 refresh/download** optional after v1.0.0
+4. **Phase 5D: Random surprise** optional after v1.0.0
+5. **Phase 6: Smart retrieval from natural language** complete through Phase 6B
 
 Author batch is the first target because it is explicit, easy to test from a user-provided `author_uid`, and exercises the important batch machinery without adding homepage ranking cache or current-user bookmark semantics.
 

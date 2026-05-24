@@ -91,6 +91,6 @@
 | 文件布局 | `{download_root}/originals/{pixiv_id}/{pixiv_id}_p{page}.{ext}` |
 | Secret 处理 | 本地存储，对外 public 读取必须 mask |
 | Live 测试 | 手动 opt-in，凭证运行时提供 |
-| 当前阶段 | Phase 6B：Smart Tag Search / Download Slice 已完成 |
-| 当前手动验证 | 2026-05-22 前端输入 Pixiv ID 下载成功；Author Batch 和 Bookmarks Batch 下载成功；2026-05-23 Smart Parse 已手动跑通 |
-| 下一阶段 | Phase 7A：Top10/Random、缩略图缓存、任务 cancel/retry 中择一规划 |
+| 当前阶段 | v1.0.0 Final Delivery：Downloader-First 交付版已冻结 |
+| 当前手动验证 | 2026-05-22 前端输入 Pixiv ID 下载成功；Author Batch 和 Bookmarks Batch 下载成功；2026-05-23 Smart Parse/Edit/Enqueue 与 Home Dashboard 已手动确认 |
+| 后续策略 | `main` 承载 v1.0.0 final delivery；Top10/Random、缩略图缓存、任务 cancel/retry 等归入交付后可选演进 |
