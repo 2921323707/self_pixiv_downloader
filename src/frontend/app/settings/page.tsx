@@ -22,6 +22,13 @@ const labels: Record<string, { title: string; icon: typeof KeyRound }> = {
   theme_id: { title: "Theme", icon: Palette }
 };
 
+type ThemeId = "cyan-studio" | "sakura-light";
+
+const themeOptions = [
+  { value: "cyan-studio", label: "Cyan Studio" },
+  { value: "sakura-light", label: "Sakura Light" }
+] as const;
+
 const settingsCategories = [
   {
     id: "general",
@@ -33,7 +40,7 @@ const settingsCategories = [
   {
     id: "appearance",
     title: "外观与主题",
-    description: "Theme selection for the Cyan Studio shell.",
+    description: "Switch between the default shell and Sakura Light.",
     icon: Palette,
     keys: ["theme_id"]
   },
@@ -141,6 +148,36 @@ export default function SettingsPage() {
     }
   }
 
+  async function switchTheme(setting: PublicSetting, theme: ThemeId) {
+    const currentTheme = normalizeTheme(drafts[setting.key]);
+    if (currentTheme === theme) {
+      window.dispatchEvent(new CustomEvent("pixiv-theme-change", { detail: { theme } }));
+      return;
+    }
+
+    setSavingKey(setting.key);
+    setSavedKey(null);
+    setPixivTestResult(null);
+    setDeepseekTestResult(null);
+    setError(null);
+    try {
+      const saved = await saveSetting(setting.key, theme);
+      setSettings((current) =>
+        current.map((item) => (item.key === saved.key ? saved : item))
+      );
+      setDrafts((current) => ({
+        ...current,
+        [saved.key]: settingValueToInput(saved.value)
+      }));
+      window.dispatchEvent(new CustomEvent("pixiv-theme-change", { detail: { theme } }));
+      setSavedKey(saved.key);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Theme save failed");
+    } finally {
+      setSavingKey(null);
+    }
+  }
+
   async function testPixiv() {
     setTestingPixiv(true);
     setPixivTestResult(null);
@@ -221,6 +258,7 @@ export default function SettingsPage() {
               const meta = labels[setting.key] || { title: setting.key, icon: Shield };
               const Icon = meta.icon;
               const isSaving = savingKey === setting.key;
+              const currentTheme = normalizeTheme(drafts[setting.key]);
 
               return (
                 <form
@@ -231,24 +269,43 @@ export default function SettingsPage() {
                   <Icon size={19} aria-hidden="true" />
                   <div>
                     <h2>{meta.title}</h2>
-                    <input
-                      inputMode={
-                        setting.key === "max_request_count" ||
-                        setting.key === "default_batch_count"
-                          ? "numeric"
-                          : "text"
-                      }
-                      placeholder={setting.is_secret ? "masked" : setting.key}
-                      value={drafts[setting.key] ?? ""}
-                      onChange={(event) =>
-                        setDrafts((current) => ({
-                          ...current,
-                          [setting.key]: event.target.value
-                        }))
-                      }
-                    />
+                    {setting.key === "theme_id" ? (
+                      <div className="theme-switcher" aria-label={meta.title}>
+                        {themeOptions.map((theme) => (
+                          <button
+                            className={currentTheme === theme.value ? "active" : ""}
+                            disabled={isSaving}
+                            key={theme.value}
+                            onClick={() => switchTheme(setting, theme.value)}
+                            type="button"
+                          >
+                            {theme.label}
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <input
+                        inputMode={
+                          setting.key === "max_request_count" ||
+                          setting.key === "default_batch_count"
+                            ? "numeric"
+                            : "text"
+                        }
+                        placeholder={setting.is_secret ? "masked" : setting.key}
+                        value={drafts[setting.key] ?? ""}
+                        onChange={(event) =>
+                          setDrafts((current) => ({
+                            ...current,
+                            [setting.key]: event.target.value
+                          }))
+                        }
+                      />
+                    )}
                   </div>
                   <div className="setting-actions">
+                    {setting.key === "theme_id" && isSaving ? (
+                      <Loader2 className="spin" size={16} aria-hidden="true" />
+                    ) : null}
                     {setting.key === "pixiv_cookie" ? (
                       <button
                         className="button secondary"
@@ -279,18 +336,20 @@ export default function SettingsPage() {
                         Test
                       </button>
                     ) : null}
-                    <button
-                      className="button secondary"
-                      disabled={isSaving || (setting.is_secret && !drafts[setting.key])}
-                      type="submit"
-                    >
-                      {isSaving ? (
-                        <Loader2 className="spin" size={16} aria-hidden="true" />
-                      ) : (
-                        <Save size={16} aria-hidden="true" />
-                      )}
-                      {savedKey === setting.key ? "Saved" : "Save"}
-                    </button>
+                    {setting.key !== "theme_id" ? (
+                      <button
+                        className="button secondary"
+                        disabled={isSaving || (setting.is_secret && !drafts[setting.key])}
+                        type="submit"
+                      >
+                        {isSaving ? (
+                          <Loader2 className="spin" size={16} aria-hidden="true" />
+                        ) : (
+                          <Save size={16} aria-hidden="true" />
+                        )}
+                        {savedKey === setting.key ? "Saved" : "Save"}
+                      </button>
+                    ) : null}
                   </div>
                 </form>
               );
@@ -314,4 +373,8 @@ function settingValueToInput(value: unknown): string {
 function coerceSettingValue(key: string, raw: string): unknown {
   if (key === "max_request_count" || key === "default_batch_count") return Number(raw);
   return raw;
+}
+
+function normalizeTheme(value: unknown): ThemeId {
+  return value === "sakura-light" ? "sakura-light" : "cyan-studio";
 }

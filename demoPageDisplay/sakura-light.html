@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sakura Light Theme Preview</title>
+  <link rel="stylesheet" href="./theme-preview.css" />
+</head>
+<body class="sakura-light">
+  <div class="app">
+    <header>
+      <div class="brand"><span class="mark"></span><span>Pixiv Studio</span></div>
+      <nav>
+        <div class="nav-item active">Dashboard</div>
+        <div class="nav-item">Download</div>
+        <div class="nav-item">Gallery</div>
+        <div class="nav-item">Tasks</div>
+        <div class="nav-item">Settings</div>
+      </nav>
+    </header>
+    <main>
+      <section class="hero">
+        <div>
+          <h1>Sakura Light</h1>
+          <p class="subtitle">明亮、柔和、偏初次使用体验，适合轻快浏览和整理收藏。</p>
+        </div>
+        <div class="toolbar">
+          <button class="tool">R18: Blurred</button>
+          <button class="tool">Map Search</button>
+          <button class="tool primary">Random Surprise</button>
+        </div>
+      </section>
+
+      <section class="layout">
+        <div class="panel">
+          <h2>Download Center</h2>
+          <div class="form">
+            <label>Mode<select><option>Smart Retrieval</option></select></label>
+            <label>Prompt<textarea>樱花、白色水手服、透明伞、雨后街道</textarea></label>
+            <label>Quantity<input value="24" /></label>
+            <div class="seg"><span>Normal</span><span class="active">Blur R18</span></div>
+            <button class="tool primary">Create Download Task</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="rank">
+            <div class="wide-art"><strong>Daily Top10 · soft gallery</strong></div>
+            <div class="thumbs">
+              <div class="thumb" style="--g:var(--thumb-a)"></div>
+              <div class="thumb" style="--g:var(--thumb-b)"></div>
+              <div class="thumb" style="--g:var(--thumb-c)"></div>
+              <div class="thumb" style="--g:var(--thumb-d)"></div>
+            </div>
+          </div>
+          <div class="gallery">
+            <div class="card" style="--h:190px;--g:var(--thumb-a)"><span class="badge">smart</span></div>
+            <div class="card" style="--h:250px;--g:var(--thumb-b)"><span class="badge">author</span></div>
+            <div class="card" style="--h:210px;--g:var(--thumb-c)"><span class="badge">top10</span></div>
+            <div class="card" style="--h:230px;--g:var(--thumb-d)"><span class="badge">tag</span></div>
+            <div class="card" style="--h:180px;--g:linear-gradient(135deg,#fff4c7,#ffa9c0)"><span class="badge">new</span></div>
+            <div class="card" style="--h:270px;--g:linear-gradient(135deg,#a7f2ee,#ffc5d8)"><span class="badge">map</span></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>Task Queue</h2>
+          <div class="task">
+            <div class="task-row">
+              <div class="meta"><strong>Smart Retrieval</strong><span>running</span></div>
+              <div class="progress"><div class="bar" style="--w:68%"></div></div>
+              <div class="meta"><span>68 / 100</span><span>1 failed</span></div>
+            </div>
+            <div class="task-row">
+              <div class="meta"><strong>Author UID</strong><span>pending</span></div>
+              <div class="progress"><div class="bar" style="--w:22%"></div></div>
+              <div class="meta"><span>waiting</span><span>normal</span></div>
+            </div>
+          </div>
+          <div class="chips">
+            <span class="chip">primary action</span>
+            <span class="chip">task chip</span>
+            <span class="chip r18">R18 badge</span>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

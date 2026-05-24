@@ -1,65 +1,103 @@
-<svg width="1180" height="360" viewBox="0 0 1180 360" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
-  <title id="title">Pixiv Platform v1.0.0 hero</title>
-  <desc id="desc">Animated dashboard style banner for the downloader-first Pixiv platform.</desc>
-  <style>
-    .pulse { animation: pulse 2.8s ease-in-out infinite; transform-origin: center; }
-    .flow { stroke-dasharray: 12 18; animation: flow 3.6s linear infinite; }
-    .rise { animation: rise 4.4s ease-in-out infinite; }
-    .rise2 { animation: rise 4.4s ease-in-out infinite .55s; }
-    .glow { animation: glow 3s ease-in-out infinite; }
-    @keyframes pulse { 0%,100% { opacity: .55; transform: scale(.98); } 50% { opacity: 1; transform: scale(1.02); } }
-    @keyframes flow { to { stroke-dashoffset: -60; } }
-    @keyframes rise { 0%,100% { transform: translateY(0); opacity: .72; } 50% { transform: translateY(-8px); opacity: 1; } }
-    @keyframes glow { 0%,100% { filter: drop-shadow(0 0 0 rgba(0,150,183,.1)); } 50% { filter: drop-shadow(0 0 14px rgba(0,150,183,.38)); } }
-    text { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
-  </style>
+<svg width="1180" height="420" viewBox="0 0 1180 420" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Pixiv Platform v1.0.0</title>
+  <desc id="desc">A clean product banner showing the local Pixiv downloader, task queue, SQLite index, and gallery workbench.</desc>
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1180" y2="360" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#F7FBFD"/>
-      <stop offset=".45" stop-color="#E8F7FB"/>
-      <stop offset="1" stop-color="#FFFFFF"/>
+    <linearGradient id="background" x1="0" y1="0" x2="1180" y2="420" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F8FBFD"/>
+      <stop offset="0.58" stop-color="#EFF8FA"/>
+      <stop offset="1" stop-color="#FDFEFF"/>
     </linearGradient>
-    <linearGradient id="cyan" x1="0" y1="0" x2="1" y2="1">
-      <stop stop-color="#0096B7"/>
-      <stop offset="1" stop-color="#70E4F6"/>
-    </linearGradient>
-    <linearGradient id="ink" x1="0" y1="0" x2="1" y2="1">
-      <stop stop-color="#17232B"/>
+    <linearGradient id="accent" x1="130" y1="70" x2="1030" y2="350" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0087A8"/>
       <stop offset="1" stop-color="#3157C9"/>
     </linearGradient>
+    <linearGradient id="panel" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#F6FBFC"/>
+    </linearGradient>
+    <filter id="shadow" x="28" y="28" width="1124" height="364" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="18" stdDeviation="24" flood-color="#14313A" flood-opacity="0.12"/>
+    </filter>
+    <style>
+      text {
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+      .label { fill: #60717B; font-size: 14px; font-weight: 700; }
+      .small { fill: #60717B; font-size: 13px; font-weight: 650; }
+      .title { fill: #17232B; font-size: 46px; font-weight: 900; }
+      .subtitle { fill: #40535E; font-size: 18px; font-weight: 650; }
+      .card-title { fill: #17232B; font-size: 17px; font-weight: 850; }
+      .card-meta { fill: #60717B; font-size: 12px; font-weight: 700; }
+      .mono { fill: #17232B; font-size: 13px; font-weight: 750; }
+    </style>
   </defs>
-  <rect width="1180" height="360" rx="28" fill="url(#bg)"/>
-  <path d="M0 92H1180M0 184H1180M0 276H1180M118 0V360M236 0V360M354 0V360M472 0V360M590 0V360M708 0V360M826 0V360M944 0V360M1062 0V360" stroke="#D8E7EE" stroke-opacity=".45"/>
-  <circle class="pulse" cx="1032" cy="74" r="96" fill="#E8F7FB"/>
-  <circle class="pulse" cx="136" cy="286" r="74" fill="#E8F7FB"/>
-  <rect x="48" y="42" width="1084" height="276" rx="22" fill="white" fill-opacity=".78" stroke="#D8E7EE"/>
-  <g class="glow">
-    <rect x="82" y="76" width="354" height="208" rx="18" fill="#17232B"/>
-    <rect x="104" y="100" width="310" height="96" rx="14" fill="url(#cyan)" opacity=".95"/>
-    <rect class="rise" x="122" y="216" width="52" height="40" rx="8" fill="#70E4F6"/>
-    <rect class="rise2" x="188" y="204" width="52" height="52" rx="8" fill="#0096B7"/>
-    <rect class="rise" x="254" y="188" width="52" height="68" rx="8" fill="#35A853"/>
-    <rect class="rise2" x="320" y="172" width="52" height="84" rx="8" fill="#3157C9"/>
+
+  <rect width="1180" height="420" rx="30" fill="url(#background)"/>
+  <path d="M88 350C236 292 278 110 448 104C590 99 640 217 777 195C894 176 922 87 1092 74" stroke="#D9E9EE" stroke-width="2"/>
+  <path d="M84 96H1096M84 324H1096" stroke="#D9E9EE" stroke-width="1"/>
+
+  <g filter="url(#shadow)">
+    <rect x="58" y="54" width="1064" height="312" rx="24" fill="white" stroke="#D8E7EE"/>
   </g>
-  <path class="flow" d="M458 180C520 180 520 116 582 116H668" stroke="#0096B7" stroke-width="4" stroke-linecap="round"/>
-  <path class="flow" d="M458 180C520 180 520 244 582 244H668" stroke="#3157C9" stroke-width="4" stroke-linecap="round"/>
+
   <g>
-    <rect x="686" y="86" width="162" height="62" rx="14" fill="#FBFDFE" stroke="#D8E7EE"/>
-    <circle cx="716" cy="117" r="10" fill="#35A853"/>
-    <text x="738" y="113" fill="#17232B" font-size="15" font-weight="800">Tasks</text>
-    <text x="738" y="133" fill="#60717B" font-size="12" font-weight="700">queue + logs</text>
-    <rect x="686" y="178" width="162" height="62" rx="14" fill="#FBFDFE" stroke="#D8E7EE"/>
-    <circle cx="716" cy="209" r="10" fill="#0096B7"/>
-    <text x="738" y="205" fill="#17232B" font-size="15" font-weight="800">Gallery</text>
-    <text x="738" y="225" fill="#60717B" font-size="12" font-weight="700">preview + delete</text>
-    <rect x="876" y="132" width="186" height="62" rx="14" fill="#FBFDFE" stroke="#D8E7EE"/>
-    <circle cx="906" cy="163" r="10" fill="#3157C9"/>
-    <text x="928" y="159" fill="#17232B" font-size="15" font-weight="800">Smart Retrieval</text>
-    <text x="928" y="179" fill="#60717B" font-size="12" font-weight="700">prompt to tags</text>
+    <rect x="94" y="90" width="116" height="30" rx="15" fill="#E8F7FB" stroke="#BEE7EE"/>
+    <circle cx="112" cy="105" r="6" fill="#0087A8"/>
+    <text x="126" y="110" fill="#0087A8" font-size="13" font-weight="850">v1.0.0 Final</text>
+
+    <text class="title" x="94" y="174">Pixiv Platform</text>
+    <text class="subtitle" x="96" y="212">Local-first downloader, SQLite index, task queue,</text>
+    <text class="subtitle" x="96" y="240">gallery preview, and smart tag retrieval.</text>
+
+    <g>
+      <rect x="96" y="278" width="128" height="42" rx="12" fill="#F6FBFC" stroke="#D8E7EE"/>
+      <text class="mono" x="114" y="303">Rust backend</text>
+      <rect x="238" y="278" width="116" height="42" rx="12" fill="#F6FBFC" stroke="#D8E7EE"/>
+      <text class="mono" x="256" y="303">Next.js UI</text>
+      <rect x="368" y="278" width="112" height="42" rx="12" fill="#F6FBFC" stroke="#D8E7EE"/>
+      <text class="mono" x="386" y="303">SQLite DB</text>
+    </g>
   </g>
-  <text x="82" y="346" fill="#60717B" font-size="13" font-weight="750">Downloader-first local platform</text>
-  <text x="480" y="92" fill="#0096B7" font-size="15" font-weight="900" letter-spacing=".18em">V1.0.0 FINAL</text>
-  <text x="480" y="132" fill="#17232B" font-size="38" font-weight="900">Pixiv AI Downloader Platform</text>
-  <text x="480" y="166" fill="#60717B" font-size="17" font-weight="700">Rust backend + SQLite index + Next.js workbench + smart tag retrieval.</text>
-  <text x="480" y="284" fill="#17232B" font-size="15" font-weight="850">Single / Author / Bookmarks / Smart / Tasks / Gallery / Settings</text>
+
+  <g>
+    <rect x="550" y="92" width="492" height="228" rx="20" fill="url(#panel)" stroke="#D8E7EE"/>
+    <rect x="578" y="120" width="436" height="52" rx="14" fill="#17232B"/>
+    <circle cx="604" cy="146" r="8" fill="#70E4F6"/>
+    <text x="626" y="142" fill="#FFFFFF" font-size="15" font-weight="850">Downloader workbench</text>
+    <text x="626" y="160" fill="#A8D9E2" font-size="12" font-weight="700">Single / Author / Bookmarks / Smart</text>
+
+    <g>
+      <rect x="578" y="194" width="130" height="88" rx="14" fill="#FFFFFF" stroke="#D8E7EE"/>
+      <rect x="596" y="214" width="42" height="42" rx="10" fill="#E8F7FB"/>
+      <path d="M606 236H628M617 225V247" stroke="#0087A8" stroke-width="4" stroke-linecap="round"/>
+      <text class="card-title" x="652" y="229">Tasks</text>
+      <text class="card-meta" x="652" y="249">queue + logs</text>
+    </g>
+
+    <g>
+      <rect x="726" y="194" width="130" height="88" rx="14" fill="#FFFFFF" stroke="#D8E7EE"/>
+      <rect x="744" y="214" width="42" height="42" rx="10" fill="#EAF8F0"/>
+      <path d="M754 244L764 232L772 240L782 224" stroke="#35A853" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+      <text class="card-title" x="800" y="229">Gallery</text>
+      <text class="card-meta" x="800" y="249">preview + delete</text>
+    </g>
+
+    <g>
+      <rect x="874" y="194" width="140" height="88" rx="14" fill="#FFFFFF" stroke="#D8E7EE"/>
+      <rect x="892" y="214" width="42" height="42" rx="10" fill="#EEF2FF"/>
+      <path d="M902 236H924M913 225V247M904 227L922 245" stroke="#3157C9" stroke-width="3.5" stroke-linecap="round"/>
+      <text class="card-title" x="948" y="229">Smart</text>
+      <text class="card-meta" x="948" y="249">prompt to tags</text>
+    </g>
+  </g>
+
+  <g>
+    <path d="M516 146H550" stroke="url(#accent)" stroke-width="4" stroke-linecap="round"/>
+    <path d="M516 238H550" stroke="url(#accent)" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="516" cy="146" r="5" fill="#0087A8"/>
+    <circle cx="516" cy="238" r="5" fill="#3157C9"/>
+  </g>
+
+  <text class="label" x="550" y="348">Downloader-first local platform</text>
+  <text class="small" x="790" y="348">Files stay local. Secrets stay masked. Live checks are opt-in.</text>
 </svg>

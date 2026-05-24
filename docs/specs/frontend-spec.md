@@ -195,7 +195,7 @@ Sections:
 - Local storage: download path and basic path status.
 - Limits: max quantity per request.
 - R18/NSFW policy: exclude, blurred, visible, only R18.
-- Theme selection: five demo themes.
+- Theme selection: one-click switch between Cyan Studio and Sakura Light.
 
 Secret behavior:
 

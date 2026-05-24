@@ -171,6 +171,8 @@ const SETTING_DEFINITIONS: &[SettingDefinition] = &[
     },
 ];
 
+const THEME_IDS: &[&str] = &["cyan-studio", "sakura-light"];
+
 fn setting_definition(key: &str) -> Option<SettingDefinition> {
     SETTING_DEFINITIONS
         .iter()
@@ -210,8 +212,14 @@ fn validate_setting_value(definition: SettingDefinition, value: &Value) -> Resul
         "download_base_path" => {
             validate_download_base_path(value)?;
         }
-        "deepseek_base_url" | "deepseek_model" | "theme_id" => {
+        "deepseek_base_url" | "deepseek_model" => {
             non_empty_string(value, definition.key)?;
+        }
+        "theme_id" => {
+            let theme = non_empty_string(value, definition.key)?;
+            if !THEME_IDS.contains(&theme) {
+                return Err(AppError::validation("theme_id is invalid"));
+            }
         }
         "r18_policy" => {
             let policy = non_empty_string(value, definition.key)?;
@@ -409,6 +417,14 @@ mod tests {
         assert!(
             repo.upsert_known_json("r18_policy", &serde_json::json!("bad-policy"))
                 .is_err()
+        );
+        assert!(
+            repo.upsert_known_json("theme_id", &serde_json::json!("bad-theme"))
+                .is_err()
+        );
+        assert!(
+            repo.upsert_known_json("theme_id", &serde_json::json!("sakura-light"))
+                .is_ok()
         );
         assert!(
             repo.upsert_known_json("max_request_count", &serde_json::json!(0))

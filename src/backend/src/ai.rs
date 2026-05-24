@@ -168,7 +168,7 @@ fn normalize_raw_plan(
     input: &SmartParseInput,
     model: &str,
 ) -> Result<SmartParsePlan, AppError> {
-    let tags = normalize_tags(raw.tags);
+    let tags = normalize_tags(raw.tags.into());
     if tags.is_empty() {
         return Err(AppError::new(
             ErrorCode::AiParseFailed,
@@ -176,7 +176,7 @@ fn normalize_raw_plan(
         ));
     }
 
-    let negative_tags = normalize_tags(raw.negative_tags.unwrap_or_default());
+    let negative_tags = normalize_tags(raw.negative_tags.map(Vec::from).unwrap_or_default());
     let count_recommend = raw
         .count_recommend
         .unwrap_or(input.count_hint)
@@ -280,12 +280,28 @@ struct DeepSeekModel {
 
 #[derive(Debug, Deserialize)]
 struct RawSmartParsePlan {
-    tags: Vec<String>,
-    negative_tags: Option<Vec<String>>,
+    tags: FlexibleTags,
+    negative_tags: Option<FlexibleTags>,
     count_recommend: Option<u32>,
     #[serde(rename = "r18_policy")]
     _r18_policy: Option<String>,
     confidence: Option<f64>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(untagged)]
+enum FlexibleTags {
+    One(String),
+    Many(Vec<String>),
+}
+
+impl From<FlexibleTags> for Vec<String> {
+    fn from(tags: FlexibleTags) -> Self {
+        match tags {
+            FlexibleTags::One(tag) => vec![tag],
+            FlexibleTags::Many(tags) => tags,
+        }
+    }
 }
 
 #[cfg(test)]
@@ -321,6 +337,33 @@ mod tests {
         assert_eq!(plan.count_recommend, 100);
         assert_eq!(plan.r18_policy, R18Policy::Exclude);
         assert_eq!(plan.model, "deepseek-v4-flash");
+    }
+
+    #[test]
+    fn req_ai_001_accepts_single_string_tags_from_deepseek() {
+        let input = SmartParseInput {
+            prompt: "一些白丝的图片".to_owned(),
+            count_hint: 20,
+            max_count: 100,
+            r18_policy: R18Policy::Exclude,
+        };
+
+        let plan = parse_smart_plan_json(
+            r#"{
+              "tags": "白タイツ",
+              "negative_tags": "low quality",
+              "count_recommend": 8,
+              "r18_policy": "exclude",
+              "confidence": 0.74
+            }"#,
+            &input,
+            "deepseek-v4-flash",
+        )
+        .unwrap();
+
+        assert_eq!(plan.tags, vec!["白タイツ"]);
+        assert_eq!(plan.negative_tags, vec!["low quality"]);
+        assert_eq!(plan.count_recommend, 8);
     }
 
     #[test]

@@ -141,7 +141,7 @@ Frontend Polls Task Status → Waterfall / Carousel Display
 * Waterfall layout + Top10 carousel
 * Lazy load for performance
 * Map-based tag visualization
-* Theme preview: 5 demo options for first-time selection
+* Theme preview: Sakura Light demo option plus one-click switch from the default theme
 * Real-time task progress and status
 
 ⸻

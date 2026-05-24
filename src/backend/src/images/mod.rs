@@ -431,11 +431,11 @@ pub fn delete_image_file_and_index(
     let image = repo
         .find_by_id(image_id)?
         .ok_or_else(|| AppError::new(ErrorCode::PixivNotFound, "image not found"))?;
-    let delete_path = resolve_deletable_image_path(&image.local_path, allowed_roots)?;
+    let delete_target = resolve_deletable_image_path(&image.local_path, allowed_roots)?;
     let mut file_deleted = false;
     let mut file_missing = false;
 
-    if let Some(path) = delete_path {
+    if let Some(path) = delete_target.file_path.as_ref() {
         match fs::remove_file(&path) {
             Ok(()) => {
                 file_deleted = true;
@@ -454,6 +454,10 @@ pub fn delete_image_file_and_index(
         file_missing = true;
     }
 
+    if file_deleted || file_missing {
+        remove_empty_image_parent_dir(delete_target.parent_dir.as_deref())?;
+    }
+
     repo.delete_index(&image.image_id)?;
 
     Ok(ImageDeleteOutcome {
@@ -465,10 +469,15 @@ pub fn delete_image_file_and_index(
     })
 }
 
+struct DeletableImagePath {
+    file_path: Option<PathBuf>,
+    parent_dir: Option<PathBuf>,
+}
+
 fn resolve_deletable_image_path(
     local_path: &str,
     allowed_roots: &[PathBuf],
-) -> Result<Option<PathBuf>, AppError> {
+) -> Result<DeletableImagePath, AppError> {
     let raw_path = PathBuf::from(local_path);
     if !raw_path.is_absolute() {
         return Err(AppError::validation("stored image path must be absolute"));
@@ -492,7 +501,13 @@ fn resolve_deletable_image_path(
             return Err(AppError::validation("stored image path is not a file"));
         }
         ensure_path_inside_roots(&canonical_path, &canonical_roots)?;
-        return Ok(Some(canonical_path));
+        let parent_dir = canonical_path
+            .parent()
+            .and_then(|parent| cleanup_parent_dir(parent, &canonical_roots));
+        return Ok(DeletableImagePath {
+            parent_dir,
+            file_path: Some(canonical_path),
+        });
     }
 
     let Some(parent) = raw_path.parent() else {
@@ -505,7 +520,43 @@ fn resolve_deletable_image_path(
         )
     })?;
     ensure_path_inside_roots(&canonical_parent, &canonical_roots)?;
-    Ok(None)
+    let parent_dir = cleanup_parent_dir(&canonical_parent, &canonical_roots);
+    Ok(DeletableImagePath {
+        file_path: None,
+        parent_dir,
+    })
+}
+
+fn cleanup_parent_dir(parent_dir: &Path, canonical_roots: &[PathBuf]) -> Option<PathBuf> {
+    if canonical_roots
+        .iter()
+        .any(|root| parent_dir.starts_with(root) && parent_dir != root)
+    {
+        Some(parent_dir.to_path_buf())
+    } else {
+        None
+    }
+}
+
+fn remove_empty_image_parent_dir(parent_dir: Option<&Path>) -> Result<(), AppError> {
+    let Some(parent_dir) = parent_dir else {
+        return Ok(());
+    };
+    match fs::remove_dir(parent_dir) {
+        Ok(()) => Ok(()),
+        Err(error)
+            if matches!(
+                error.kind(),
+                std::io::ErrorKind::NotFound | std::io::ErrorKind::DirectoryNotEmpty
+            ) =>
+        {
+            Ok(())
+        }
+        Err(error) => Err(AppError::new(
+            ErrorCode::FilesystemWriteFailed,
+            format!("empty image parent directory could not be deleted: {error}"),
+        )),
+    }
 }
 
 fn canonical_allowed_roots(allowed_roots: &[PathBuf]) -> Vec<PathBuf> {
@@ -878,6 +929,7 @@ mod tests {
         assert!(outcome.file_deleted);
         assert!(!outcome.file_missing);
         assert!(!image_path.exists());
+        assert!(!root.join("originals/144920810").exists());
         assert!(repo.find_by_id("image-1").unwrap().is_none());
         assert!(repo.tags_for_image("image-1").unwrap().is_empty());
         assert!(repo.sources_for_image("image-1").unwrap().is_empty());
@@ -905,6 +957,65 @@ mod tests {
 
         assert!(!outcome.file_deleted);
         assert!(outcome.file_missing);
+        assert!(!root.join("originals/144920810").exists());
+        assert!(repo.find_by_id("image-1").unwrap().is_none());
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn req_img_007_delete_image_keeps_non_empty_parent_directory() {
+        let conn = open_in_memory().unwrap();
+        let repo = ImageRepository::new(&conn);
+        let root = std::env::temp_dir().join(format!(
+            "pixiv_platform_image_delete_nonempty_{}",
+            std::process::id()
+        ));
+        let _ = fs::remove_dir_all(&root);
+        let image_dir = root.join("originals/144920810");
+        fs::create_dir_all(&image_dir).unwrap();
+        let image_path = image_dir.join("144920810_p0.jpg");
+        let sibling_path = image_dir.join("144920810_p1.jpg");
+        fs::write(&image_path, b"delete bytes").unwrap();
+        fs::write(&sibling_path, b"keep bytes").unwrap();
+
+        let mut image = sample_image("image-1", "144920810", 0);
+        image.local_path = image_path.to_string_lossy().to_string();
+        repo.insert(&image).unwrap();
+
+        let outcome =
+            delete_image_file_and_index(&repo, "image-1", std::slice::from_ref(&root)).unwrap();
+
+        assert!(outcome.file_deleted);
+        assert!(!image_path.exists());
+        assert!(image_dir.exists());
+        assert!(sibling_path.exists());
+        assert!(repo.find_by_id("image-1").unwrap().is_none());
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn req_img_007_delete_image_does_not_remove_download_root() {
+        let conn = open_in_memory().unwrap();
+        let repo = ImageRepository::new(&conn);
+        let root = std::env::temp_dir().join(format!(
+            "pixiv_platform_image_delete_root_keep_{}",
+            std::process::id()
+        ));
+        let _ = fs::remove_dir_all(&root);
+        fs::create_dir_all(&root).unwrap();
+        let image_path = root.join("seeded.jpg");
+        fs::write(&image_path, b"delete bytes").unwrap();
+
+        let mut image = sample_image("image-1", "144920810", 0);
+        image.local_path = image_path.to_string_lossy().to_string();
+        repo.insert(&image).unwrap();
+
+        let outcome =
+            delete_image_file_and_index(&repo, "image-1", std::slice::from_ref(&root)).unwrap();
+
+        assert!(outcome.file_deleted);
+        assert!(!image_path.exists());
+        assert!(root.exists());
         assert!(repo.find_by_id("image-1").unwrap().is_none());
         let _ = fs::remove_dir_all(root);
     }

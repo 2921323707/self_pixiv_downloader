@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import {
   Download,
   GalleryHorizontalEnd,
@@ -10,6 +11,7 @@ import {
   Settings,
   Sparkles
 } from "lucide-react";
+import { fetchSettings } from "../lib/api";
 
 const navItems = [
   { href: "/", label: "Home", icon: Home },
@@ -19,8 +21,47 @@ const navItems = [
   { href: "/settings", label: "Settings", icon: Settings }
 ];
 
+type ThemeId = "cyan-studio" | "sakura-light";
+
+const themeLabels: Record<ThemeId, string> = {
+  "cyan-studio": "Cyan Studio",
+  "sakura-light": "Sakura Light"
+};
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const [theme, setTheme] = useState<ThemeId>("cyan-studio");
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadTheme() {
+      try {
+        const result = await fetchSettings();
+        const setting = result.items.find((item) => item.key === "theme_id");
+        const nextTheme = normalizeTheme(setting?.value);
+        if (!active) return;
+        setTheme(nextTheme);
+        applyTheme(nextTheme);
+      } catch {
+        applyTheme("cyan-studio");
+      }
+    }
+
+    function handleThemeChange(event: Event) {
+      const nextTheme = normalizeTheme((event as CustomEvent).detail?.theme);
+      setTheme(nextTheme);
+      applyTheme(nextTheme);
+    }
+
+    loadTheme();
+    window.addEventListener("pixiv-theme-change", handleThemeChange);
+
+    return () => {
+      active = false;
+      window.removeEventListener("pixiv-theme-change", handleThemeChange);
+    };
+  }, []);
 
   return (
     <div className="app-shell">
@@ -31,7 +72,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </span>
           <span>
             <strong>Pixiv Platform</strong>
-            <small>Cyan Studio</small>
+            <small>{themeLabels[theme]}</small>
           </span>
         </Link>
         <nav className="nav" aria-label="Primary navigation">
@@ -60,4 +101,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <main className="main">{children}</main>
     </div>
   );
+}
+
+function normalizeTheme(value: unknown): ThemeId {
+  return value === "sakura-light" ? "sakura-light" : "cyan-studio";
+}
+
+function applyTheme(theme: ThemeId) {
+  document.body.dataset.theme = theme;
 }

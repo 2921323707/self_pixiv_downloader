@@ -65,7 +65,7 @@ V1 includes local usage only. It does not include account systems, cloud sync, D
 | `REQ-CFG-003` | Configure DeepSeek settings. | User can save API key, base URL, and model; defaults are `https://api.deepseek.com` and `deepseek-v4-flash`. |
 | `REQ-CFG-004` | Configure request limits. | Frontend and backend enforce max quantity per request. |
 | `REQ-CFG-005` | Configure R18/NSFW policy. | User can choose visibility/download policy, and UI reflects it consistently. |
-| `REQ-CFG-006` | Configure visual theme. | User can preview and select one of five anime-oriented themes. |
+| `REQ-CFG-006` | Configure visual theme. | User can switch between Cyan Studio and Sakura Light. |
 | `REQ-CFG-007` | Configure default batch quantity. | Batch and smart retrieval requests use a configurable default count when the user does not provide one. |
 
 ### Frontend UX
@@ -84,7 +84,7 @@ V1 includes local usage only. It does not include account systems, cloud sync, D
 | ID | Requirement | Acceptance Criteria |
 | --- | --- | --- |
 | `REQ-THEME-001` | Use an anime/Pixiv-compatible visual language. | UI feels image-first, polished, bright, and expressive without reducing gallery density. |
-| `REQ-THEME-002` | Provide five theme demos. | First-time theme selection previews five distinct palettes and density choices. |
+| `REQ-THEME-002` | Provide Sakura Light theme demo. | Sakura Light preview uses real layout fragments, not only swatches. |
 | `REQ-THEME-003` | Avoid one-note color systems. | Themes combine neutrals, accent colors, status colors, and image-friendly surfaces. |
 | `REQ-THEME-004` | Keep operational pages efficient. | Download, task, and settings pages remain scannable and tool-like rather than landing-page-like. |
 | `REQ-THEME-005` | Protect R18 content by design. | R18 thumbnails can be hidden, blurred, or gated according to settings. |

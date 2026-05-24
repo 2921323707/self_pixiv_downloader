@@ -43,23 +43,9 @@ Each theme defines:
 
 Theme should be represented as CSS variables at app root.
 
-## Five V1 Themes
+## Active V1 Themes
 
-### 1. Sakura Light
-
-Use case: bright anime gallery, friendly first-run experience.
-
-Palette direction:
-
-- Warm white background.
-- Soft pink accent.
-- Ink-like dark text.
-- Mint or cyan secondary accent for controls/status.
-- Red/ruby reserved for R18/danger.
-
-Personality: clean, soft, optimistic.
-
-### 2. Cyan Studio
+### 1. Cyan Studio
 
 Selected default theme.
 
@@ -100,46 +86,19 @@ Layout direction:
 - Gallery cards should use restrained chrome so cyan accents do not compete with image colors.
 - Coral should be reserved for important actions or secondary highlights, not used as a dominant page wash.
 
-### 3. Night Gallery
+### 2. Sakura Light
 
-Use case: comfortable late-night browsing.
-
-Palette direction:
-
-- Deep neutral background, not pure black.
-- Off-white text.
-- Teal or electric blue accent.
-- Amber warning.
-- R18 uses rose.
-
-Personality: immersive, calm, image-cinema-like.
-
-### 4. Pop Canvas
-
-Use case: expressive anime collection browsing.
+Use case: bright anime gallery, friendly first-run experience.
 
 Palette direction:
 
-- Clean white background.
-- Saturated but controlled coral accent.
-- Secondary violet/cyan only for small UI accents.
-- Stronger badges and chips.
+- Warm white background.
+- Soft pink accent.
+- Ink-like dark text.
+- Mint or cyan secondary accent for controls/status.
+- Red/ruby reserved for R18/danger.
 
-Personality: playful, energetic, but still organized.
-
-### 5. Mono Ink
-
-Use case: users who want images to dominate all color.
-
-Palette direction:
-
-- White or near-white background.
-- Black/gray text and borders.
-- Single restrained blue accent.
-- Status colors remain semantic.
-- R18 uses explicit red/rose.
-
-Personality: gallery-wall, minimal, focused.
+Personality: clean, soft, optimistic.
 
 ## Layout Density
 
@@ -221,9 +180,9 @@ Avoid:
 - Motion that distracts from images.
 - Infinite shimmer after content is loaded.
 
-## First-Run Theme Preview
+## Theme Preview
 
-First run should present five theme previews using real layout fragments:
+The Sakura Light preview should use real layout fragments:
 
 - Mini gallery grid.
 - Task status chip.

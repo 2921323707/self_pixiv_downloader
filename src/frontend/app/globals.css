@@ -6,12 +6,34 @@
   --text-secondary: #60717b;
   --border: #d8e7ee;
   --accent: #0096b7;
+  --accent-bright: #70e4f6;
   --accent-soft: #e8f7fb;
   --success: #35a853;
   --warning: #e6a100;
   --danger: #d64a67;
   --thumbnail-placeholder: #dbeaf0;
+  --background-grid: rgba(0, 150, 183, 0.08);
+  --background-start: #f7fbfd;
   --shadow: 0 18px 42px rgba(21, 56, 70, 0.12);
+}
+
+body[data-theme="sakura-light"] {
+  --background: #fff7fa;
+  --surface: #ffffff;
+  --surface-elevated: #ffffff;
+  --text-primary: #251923;
+  --text-secondary: #7b6370;
+  --border: #f1cbd9;
+  --accent: #ef6f9a;
+  --accent-bright: #00a7a7;
+  --accent-soft: #ffe8f0;
+  --success: #38a56f;
+  --warning: #d38b00;
+  --danger: #c93d66;
+  --thumbnail-placeholder: #f7dbe6;
+  --background-grid: rgba(239, 111, 154, 0.08);
+  --background-start: #fffdfd;
+  --shadow: 0 18px 42px rgba(160, 70, 102, 0.16);
 }
 
 * {
@@ -27,8 +49,8 @@ body {
   margin: 0;
   color: var(--text-primary);
   background:
-    linear-gradient(90deg, rgba(0, 150, 183, 0.08) 1px, transparent 1px),
-    linear-gradient(180deg, #f7fbfd, var(--background));
+    linear-gradient(90deg, var(--background-grid) 1px, transparent 1px),
+    linear-gradient(180deg, var(--background-start), var(--background));
   background-size: 32px 32px, auto;
   font-family:
     Inter,
@@ -42,6 +64,7 @@ body {
 
 button,
 input,
+select,
 textarea {
   font: inherit;
 }
@@ -93,7 +116,7 @@ a {
   place-items: center;
   border-radius: 9px;
   color: white;
-  background: linear-gradient(135deg, var(--accent), #70e4f6);
+  background: linear-gradient(135deg, var(--accent), var(--accent-bright));
   box-shadow: inset 0 -8px 16px rgba(255, 255, 255, 0.28);
 }
 
@@ -403,6 +426,7 @@ label {
 }
 
 input,
+select,
 textarea {
   width: 100%;
   min-height: 40px;
@@ -411,6 +435,10 @@ textarea {
   padding: 0 11px;
   color: var(--text-primary);
   background: #fbfdfe;
+}
+
+select {
+  cursor: pointer;
 }
 
 textarea {
@@ -1417,6 +1445,35 @@ th {
   justify-content: flex-end;
 }
 
+.theme-switcher {
+  display: inline-grid;
+  grid-template-columns: repeat(2, minmax(130px, 1fr));
+  gap: 8px;
+  width: min(420px, 100%);
+}
+
+.theme-switcher button {
+  min-height: 38px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  background: var(--surface);
+  font-weight: 820;
+  cursor: pointer;
+}
+
+.theme-switcher button.active {
+  color: white;
+  border-color: var(--accent);
+  background: var(--accent);
+  box-shadow: 0 12px 24px rgba(0, 150, 183, 0.18);
+}
+
+.theme-switcher button:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
 .empty-state {
   display: flex;
   align-items: center;
@@ -1512,6 +1569,10 @@ th {
 
   .segmented {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .theme-switcher {
+    grid-template-columns: 1fr;
   }
 
   .task-search,
