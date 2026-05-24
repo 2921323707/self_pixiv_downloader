@@ -1,16 +1,6 @@
 # Pixiv Platform
 
-<p align="center">
-  <img src="docs/assets/readme-hero.svg" alt="Pixiv Platform v1.0.0" width="100%" />
-</p>
-
-本项目是一个本地优先的 Pixiv AI 下载与智能检索平台。当前版本采用
-downloader-first 路线：先把「下载、索引、任务状态、图库预览、设置管理」
-这一条核心闭环做稳，再逐步扩展发现、检索和图库组织能力。
-
-当前交付状态：v1.0.0 Final Delivery。项目已经完成单作品下载、作者批量下载、
-收藏批量下载、DeepSeek 智能解析、Pixiv 标签搜索批量下载、任务列表、Gallery
-预览与删除、Settings 配置和 Next.js 前端工作台。
+![](./static/innerFiles/image.png)
 
 ## 功能概览
 
