@@ -1,6 +1,12 @@
-# Pixiv Platform
+<p align="center">
+  <img src="./static/innerFiles/app-icon.png" alt="Pixiv Platform logo" width="128" />
+</p>
 
-![](./static/innerFiles/image.png)
+<h1 align="center">Pixiv Platform</h1>
+
+<p align="center">
+  本地优先的 Pixiv 下载、索引、图库与智能检索工作台，支持 Web 工作台与 macOS 桌面端。
+</p>
 
 ## 功能概览
 
@@ -13,6 +19,7 @@
 - Tasks：查看任务状态、进度、任务项和日志。
 - Settings：配置 Pixiv cookie、DeepSeek key、下载目录、默认批量数量、R18 策略和主题。
 - Next.js 工作台：Home、Download、Tasks、Gallery、Settings 五个主要页面。
+- macOS 桌面端：Tauri `.app` / 未签名 `.dmg` 打包，内嵌启动现有 Rust 后端。
 
 ## 部分页面展示
 ### 首页
@@ -36,9 +43,11 @@
 ```text
 src/backend/          Rust 后端、API、任务队列、Pixiv/DeepSeek 客户端、SQLite 仓储
 src/frontend/         Next.js 前端工作台
+tauri-app/            macOS Tauri 桌面壳与打包配置
 docs/                 产品、架构、接口、测试和交付文档
 tests/                单元、集成、阶段、smoke 和 opt-in live 测试脚本
 demoPageDisplay/      视觉主题 demo 与预览资源
+static/               README 图片和展示素材
 output/               默认下载目录，运行时生成
 ```
 
@@ -49,6 +58,9 @@ output/               默认下载目录，运行时生成
 - macOS / Linux shell 环境
 - 有效的 Pixiv `PHPSESSID` cookie，真实下载时需要
 - DeepSeek API key，只有 Smart Retrieval 解析或连接测试时需要
+
+macOS 桌面端打包需要在 macOS 上执行。小范围使用已打包 `.dmg` 的用户不需要安装
+Rust、Cargo、Node、npm 或 TypeScript。
 
 ## 快速启动
 
@@ -143,8 +155,26 @@ cd src/frontend
 npm run build
 ```
 
-当前前端仍按本地工作台形态使用，开发时通过 Next.js dev server 代理后端 API
-更方便。发布完整桌面/一体化应用不属于 v1.0.0 范围。
+### macOS 桌面端构建
+
+v1.1.0 起提供 Tauri macOS 桌面端。桌面端复用现有 `src/frontend` 和 `src/backend`，
+不会复制业务代码。Tauri 启动时会在进程内启动 Axum 后端，并为前端注入运行时 API 地址。
+
+```bash
+cd tauri-app
+npm install
+npm run build
+```
+
+构建产物：
+
+```text
+tauri-app/src-tauri/target/release/bundle/macos/Pixiv Platform.app
+tauri-app/src-tauri/target/release/bundle/dmg/Pixiv Platform_1.1.0_aarch64.dmg
+```
+
+当前 `.dmg` 为未签名、未公证版本，可用于 GitHub Release 小范围分发。首次打开时，
+macOS Gatekeeper 可能拦截，需要用户在系统安全设置中手动允许。
 
 ## 测试
 
@@ -189,27 +219,32 @@ PIXIV_PHPSESSID=your_pixiv_cookie ./tests/e2e/live_single_download.sh
 
 ## 当前边界
 
-v1.0.0 的目标是稳定的本地下载、索引和工作台闭环。以下能力属于后续 v1.x / v2
-演进方向，不是当前交付阻塞项：
+v1.0.0 已完成稳定的本地下载、索引和 Web 工作台闭环。v1.1.0 增加 macOS Tauri
+桌面端与未签名 `.dmg` 小范围分发。以下能力仍属于后续 v1.x / v2 演进方向：
 
 - 缩略图缓存和大图库性能优化
 - Top10 / Random discovery modes
 - 任务取消、重试和更细 worker 诊断
 - 图片编辑、地图视图和更复杂的图库组织
 - 本地语义检索、相似图聚类和向量索引
+- macOS 正式签名、公证和自动更新
 
 ## 文档入口
 
 - `docs/CONTEXT_HANDOFF.md`：新会话恢复项目上下文
 - `docs/progress.md`：当前阶段、完成项和验证基线
 - `docs/DOCUMENT_MAP.md`：文档地图
+- `docs/releases/v1.1.0.md`：v1.1.0 Release notes
 - `docs/specs/architecture.md`：架构说明
 - `docs/specs/api-contract.md`：API 合约
 - `docs/specs/testing-strategy.md`：测试策略
+- `tauri-app/docs/progress.md`：macOS 桌面端进度与验证记录
 
 ## 安全说明
 
 - secret 只允许运行时配置或通过 Settings 保存到本地 SQLite。
 - API 返回 Settings 时会遮罩 secret。
 - live 测试必须手动 opt-in。
-- 默认下载目录为项目 `output/`，可通过 Settings 或环境变量改为绝对路径。
+- Web / 后端独立运行默认下载目录为项目 `output/`，可通过 Settings 或环境变量改为绝对路径。
+- macOS 桌面端默认下载目录为 `~/Downloads/Pixiv Platform/`，默认 SQLite 路径为
+  `~/Downloads/Pixiv Platform/pixiv_platform.sqlite3`。
