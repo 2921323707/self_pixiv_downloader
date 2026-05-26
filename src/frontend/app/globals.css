@@ -115,9 +115,15 @@ a {
   height: 34px;
   place-items: center;
   border-radius: 9px;
-  color: white;
-  background: linear-gradient(135deg, var(--accent), var(--accent-bright));
-  box-shadow: inset 0 -8px 16px rgba(255, 255, 255, 0.28);
+  overflow: hidden;
+  background: var(--surface-elevated);
+  box-shadow: 0 8px 18px rgba(16, 24, 40, 0.12);
+}
+
+.brand-mark img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .nav {
@@ -1344,6 +1350,10 @@ th {
   padding: 16px;
   background: var(--surface);
   box-shadow: var(--shadow);
+}
+
+.delete-confirm-modal {
+  width: min(460px, 100%);
 }
 
 .modal-title {

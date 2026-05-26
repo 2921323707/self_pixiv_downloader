@@ -1,0 +1,4 @@
+[[permission]]
+identifier = "select-download-directory"
+description = "Allows the main window to open the macOS folder picker for selecting a download directory."
+commands.allow = ["select_download_directory"]

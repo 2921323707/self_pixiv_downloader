@@ -151,12 +151,31 @@ type ApiErrorEnvelope = {
   };
 };
 
+declare global {
+  interface Window {
+    __PIXIV_PLATFORM_BACKEND_URL__?: string;
+    __TAURI_INTERNALS__?: {
+      invoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T>;
+    };
+  }
+}
+
+export function apiUrl(path: string): string {
+  const runtimeBaseUrl =
+    typeof window === "undefined" ? undefined : window.__PIXIV_PLATFORM_BACKEND_URL__;
+  const baseUrl = (runtimeBaseUrl || process.env.NEXT_PUBLIC_PIXIV_BACKEND_URL)?.replace(
+    /\/+$/,
+    "",
+  );
+  return baseUrl ? `${baseUrl}${path}` : path;
+}
+
 export async function startSingleDownload(input: {
   pixiv_id: string;
   page_index?: number;
   r18_policy: string;
 }): Promise<SingleDownloadResult> {
-  const response = await fetch("/api/download/single", {
+  const response = await fetch(apiUrl("/api/download/single"), {
     method: "POST",
     headers: {
       "content-type": "application/json"
@@ -172,7 +191,7 @@ export async function startAuthorDownload(input: {
   limit?: number;
   r18_policy?: string;
 }): Promise<BatchDownloadResult> {
-  const response = await fetch("/api/downloads/author", {
+  const response = await fetch(apiUrl("/api/downloads/author"), {
     method: "POST",
     headers: {
       "content-type": "application/json"
@@ -187,7 +206,7 @@ export async function startBookmarkDownload(input: {
   limit?: number;
   r18_policy?: string;
 }): Promise<BatchDownloadResult> {
-  const response = await fetch("/api/downloads/bookmarks", {
+  const response = await fetch(apiUrl("/api/downloads/bookmarks"), {
     method: "POST",
     headers: {
       "content-type": "application/json"
@@ -203,7 +222,7 @@ export async function parseSmartPrompt(input: {
   count?: number;
   r18_policy?: string;
 }): Promise<SmartParseResult> {
-  const response = await fetch("/api/smart/parse", {
+  const response = await fetch(apiUrl("/api/smart/parse"), {
     method: "POST",
     headers: {
       "content-type": "application/json"
@@ -222,7 +241,7 @@ export async function startSmartDownload(input: {
   r18_policy?: string;
   model?: string;
 }): Promise<BatchDownloadResult> {
-  const response = await fetch("/api/smart/download", {
+  const response = await fetch(apiUrl("/api/smart/download"), {
     method: "POST",
     headers: {
       "content-type": "application/json"
@@ -234,7 +253,7 @@ export async function startSmartDownload(input: {
 }
 
 export async function fetchTask(taskId: string): Promise<TaskSnapshot> {
-  const response = await fetch(`/api/tasks/${encodeURIComponent(taskId)}`, {
+  const response = await fetch(apiUrl(`/api/tasks/${encodeURIComponent(taskId)}`), {
     cache: "no-store"
   });
 
@@ -253,7 +272,7 @@ export async function fetchTasks(input: {
   if (input.limit) params.set("limit", String(input.limit));
   if (input.cursor) params.set("cursor", input.cursor);
 
-  const response = await fetch(`/api/tasks?${params.toString()}`, {
+  const response = await fetch(apiUrl(`/api/tasks?${params.toString()}`), {
     cache: "no-store"
   });
 
@@ -276,7 +295,7 @@ export async function fetchImages(input: {
   if (input.limit) params.set("limit", String(input.limit));
   if (input.cursor) params.set("cursor", input.cursor);
 
-  const response = await fetch(`/api/images?${params.toString()}`, {
+  const response = await fetch(apiUrl(`/api/images?${params.toString()}`), {
     cache: "no-store"
   });
 
@@ -284,7 +303,7 @@ export async function fetchImages(input: {
 }
 
 export async function fetchImage(imageId: string): Promise<GalleryImageDetail> {
-  const response = await fetch(`/api/images/${encodeURIComponent(imageId)}`, {
+  const response = await fetch(apiUrl(`/api/images/${encodeURIComponent(imageId)}`), {
     cache: "no-store"
   });
 
@@ -292,7 +311,7 @@ export async function fetchImage(imageId: string): Promise<GalleryImageDetail> {
 }
 
 export async function deleteImages(imageIds: string[]): Promise<ImageDeleteResult> {
-  const response = await fetch("/api/images/delete-batch", {
+  const response = await fetch(apiUrl("/api/images/delete-batch"), {
     method: "POST",
     headers: {
       "content-type": "application/json"
@@ -304,7 +323,7 @@ export async function deleteImages(imageIds: string[]): Promise<ImageDeleteResul
 }
 
 export async function fetchSettings(): Promise<SettingsResult> {
-  const response = await fetch("/api/settings", {
+  const response = await fetch(apiUrl("/api/settings"), {
     cache: "no-store"
   });
 
@@ -312,7 +331,7 @@ export async function fetchSettings(): Promise<SettingsResult> {
 }
 
 export async function saveSetting(key: string, value: unknown): Promise<PublicSetting> {
-  const response = await fetch(`/api/settings/${encodeURIComponent(key)}`, {
+  const response = await fetch(apiUrl(`/api/settings/${encodeURIComponent(key)}`), {
     method: "PUT",
     headers: {
       "content-type": "application/json"
@@ -324,7 +343,7 @@ export async function saveSetting(key: string, value: unknown): Promise<PublicSe
 }
 
 export async function testPixivConnection(pixivId?: string): Promise<PixivConnectionTestResult> {
-  const response = await fetch("/api/settings/test/pixiv", {
+  const response = await fetch(apiUrl("/api/settings/test/pixiv"), {
     method: "POST",
     headers: {
       "content-type": "application/json"
@@ -336,7 +355,7 @@ export async function testPixivConnection(pixivId?: string): Promise<PixivConnec
 }
 
 export async function testDeepSeekConnection(): Promise<DeepSeekConnectionTestResult> {
-  const response = await fetch("/api/settings/test/deepseek", {
+  const response = await fetch(apiUrl("/api/settings/test/deepseek"), {
     method: "POST"
   });
 

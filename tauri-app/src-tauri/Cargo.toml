@@ -1,0 +1,12 @@
+[package]
+name = "pixiv_platform_tauri_app"
+version = "1.1.0"
+edition = "2024"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+pixiv_platform_backend = { path = "../../src/backend" }
+tauri = { version = "2", features = [] }
+tokio = { version = "1", features = ["rt-multi-thread"] }

@@ -1,8 +1,10 @@
 .DS_Store
 target/
 src/backend/target/
+tauri-app/src-tauri/gen/
 node_modules/
 .next/
+src/frontend/out/
 dist/
 coverage/
 tsconfig.tsbuildinfo

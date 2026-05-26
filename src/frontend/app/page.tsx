@@ -23,6 +23,7 @@ import {
   UserRound
 } from "lucide-react";
 import {
+  apiUrl,
   fetchImages,
   fetchSettings,
   fetchTasks,
@@ -163,7 +164,7 @@ export default function HomePage() {
           {bannerImage?.preview_url || bannerImage?.thumbnail_url ? (
             <img
               alt={bannerImage.title || `Pixiv ${bannerImage.pixiv_id} page ${bannerImage.page_index}`}
-              src={bannerImage.preview_url || bannerImage.thumbnail_url || ""}
+              src={apiUrl(bannerImage.preview_url || bannerImage.thumbnail_url || "")}
             />
           ) : (
             <ImageOff size={26} aria-hidden="true" />
@@ -292,7 +293,7 @@ export default function HomePage() {
                   {image.thumbnail_url || image.preview_url ? (
                     <img
                       alt={image.title || `Pixiv ${image.pixiv_id} page ${image.page_index}`}
-                      src={image.thumbnail_url || image.preview_url || ""}
+                      src={apiUrl(image.thumbnail_url || image.preview_url || "")}
                     />
                   ) : (
                     <ImageOff size={20} aria-hidden="true" />

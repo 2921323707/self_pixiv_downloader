@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { EyeOff, Folder, KeyRound, Loader2, Palette, Save, Shield, Wifi } from "lucide-react";
+import { EyeOff, Folder, FolderOpen, KeyRound, Loader2, Palette, Save, Shield, Wifi } from "lucide-react";
 import {
   fetchSettings,
   PublicSetting,
@@ -79,6 +79,7 @@ export default function SettingsPage() {
   const [savedKey, setSavedKey] = useState<string | null>(null);
   const [testingPixiv, setTestingPixiv] = useState(false);
   const [testingDeepSeek, setTestingDeepSeek] = useState(false);
+  const [selectingDownloadDirectory, setSelectingDownloadDirectory] = useState(false);
   const [pixivTestResult, setPixivTestResult] = useState<string | null>(null);
   const [deepseekTestResult, setDeepseekTestResult] = useState<string | null>(null);
 
@@ -126,6 +127,10 @@ export default function SettingsPage() {
       return;
     }
 
+    await saveSettingDraft(setting, raw);
+  }
+
+  async function saveSettingDraft(setting: PublicSetting, raw: string) {
     setSavingKey(setting.key);
     setSavedKey(null);
     setPixivTestResult(null);
@@ -145,6 +150,33 @@ export default function SettingsPage() {
       setError(caught instanceof Error ? caught.message : "Setting save failed");
     } finally {
       setSavingKey(null);
+    }
+  }
+
+  async function chooseDownloadDirectory(setting: PublicSetting) {
+    const invoke = window.__TAURI_INTERNALS__?.invoke;
+    if (!invoke) {
+      setError("Folder picker is only available in the Tauri desktop app.");
+      return;
+    }
+
+    setSelectingDownloadDirectory(true);
+    setError(null);
+    setSavedKey(null);
+    try {
+      const selectedPath = await invoke<string | null>("select_download_directory");
+      if (!selectedPath) {
+        return;
+      }
+      setDrafts((current) => ({
+        ...current,
+        [setting.key]: selectedPath
+      }));
+      await saveSettingDraft(setting, selectedPath);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Folder selection failed");
+    } finally {
+      setSelectingDownloadDirectory(false);
     }
   }
 
@@ -258,6 +290,8 @@ export default function SettingsPage() {
               const meta = labels[setting.key] || { title: setting.key, icon: Shield };
               const Icon = meta.icon;
               const isSaving = savingKey === setting.key;
+              const isDownloadPath = setting.key === "download_base_path";
+              const isPickingDirectory = isDownloadPath && selectingDownloadDirectory;
               const currentTheme = normalizeTheme(drafts[setting.key]);
 
               return (
@@ -284,22 +318,25 @@ export default function SettingsPage() {
                         ))}
                       </div>
                     ) : (
-                      <input
-                        inputMode={
-                          setting.key === "max_request_count" ||
-                          setting.key === "default_batch_count"
-                            ? "numeric"
-                            : "text"
-                        }
-                        placeholder={setting.is_secret ? "masked" : setting.key}
-                        value={drafts[setting.key] ?? ""}
-                        onChange={(event) =>
-                          setDrafts((current) => ({
-                            ...current,
-                            [setting.key]: event.target.value
-                          }))
-                        }
-                      />
+                      <div className={isDownloadPath ? "path-picker-field" : undefined}>
+                        <input
+                          inputMode={
+                            setting.key === "max_request_count" ||
+                            setting.key === "default_batch_count"
+                              ? "numeric"
+                              : "text"
+                          }
+                          placeholder={setting.is_secret ? "masked" : setting.key}
+                          readOnly={isDownloadPath}
+                          value={drafts[setting.key] ?? ""}
+                          onChange={(event) =>
+                            setDrafts((current) => ({
+                              ...current,
+                              [setting.key]: event.target.value
+                            }))
+                          }
+                        />
+                      </div>
                     )}
                   </div>
                   <div className="setting-actions">
@@ -336,7 +373,22 @@ export default function SettingsPage() {
                         Test
                       </button>
                     ) : null}
-                    {setting.key !== "theme_id" ? (
+                    {isDownloadPath ? (
+                      <button
+                        className="button secondary"
+                        disabled={isSaving || selectingDownloadDirectory}
+                        onClick={() => chooseDownloadDirectory(setting)}
+                        type="button"
+                      >
+                        {isPickingDirectory ? (
+                          <Loader2 className="spin" size={16} aria-hidden="true" />
+                        ) : (
+                          <FolderOpen size={16} aria-hidden="true" />
+                        )}
+                        {savedKey === setting.key ? "Selected" : "Choose"}
+                      </button>
+                    ) : null}
+                    {setting.key !== "theme_id" && !isDownloadPath ? (
                       <button
                         className="button secondary"
                         disabled={isSaving || (setting.is_secret && !drafts[setting.key])}

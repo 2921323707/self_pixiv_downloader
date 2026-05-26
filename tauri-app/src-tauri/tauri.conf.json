@@ -1,0 +1,23 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Pixiv Platform",
+  "version": "1.1.0",
+  "identifier": "local.pixiv-platform.desktop",
+  "build": {
+    "beforeDevCommand": "npm --prefix ../src/frontend run dev",
+    "devUrl": "http://127.0.0.1:3001",
+    "beforeBuildCommand": "NEXT_OUTPUT_EXPORT=1 npm --prefix ../src/frontend run build",
+    "frontendDist": "../../src/frontend/out"
+  },
+  "app": {
+    "windows": [],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["app", "dmg"],
+    "icon": ["icons/icon.png"]
+  }
+}

@@ -14,6 +14,7 @@ import {
   X
 } from "lucide-react";
 import {
+  apiUrl,
   deleteImages,
   fetchImage,
   fetchImages,
@@ -42,6 +43,7 @@ export default function GalleryPage() {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [deleteSummary, setDeleteSummary] = useState<string | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const detailRequestRef = useRef(0);
 
   async function load(cursor: string | null = null) {
@@ -135,14 +137,20 @@ export default function GalleryPage() {
     });
   }
 
-  async function deleteSelected() {
+  function requestDeleteSelected() {
     const imageIds = Array.from(selectedIds);
     if (imageIds.length === 0 || deleteLoading) return;
-    const confirmed = window.confirm(
-      `Delete ${imageIds.length} selected image${imageIds.length === 1 ? "" : "s"} from disk and SQLite?`
-    );
-    if (!confirmed) return;
+    setDeleteError(null);
+    setDeleteSummary(null);
+    setDeleteConfirmOpen(true);
+  }
 
+  async function confirmDeleteSelected() {
+    const imageIds = Array.from(selectedIds);
+    if (imageIds.length === 0 || deleteLoading) {
+      setDeleteConfirmOpen(false);
+      return;
+    }
     setDeleteLoading(true);
     setDeleteError(null);
     setDeleteSummary(null);
@@ -168,6 +176,7 @@ export default function GalleryPage() {
       setDeleteError(caught instanceof Error ? caught.message : "Delete failed");
     } finally {
       setDeleteLoading(false);
+      setDeleteConfirmOpen(false);
     }
   }
 
@@ -234,7 +243,7 @@ export default function GalleryPage() {
         <button
           className="button danger"
           disabled={!selectionMode || selectedIds.size === 0 || deleteLoading}
-          onClick={deleteSelected}
+          onClick={requestDeleteSelected}
           type="button"
         >
           {deleteLoading ? (
@@ -272,7 +281,7 @@ export default function GalleryPage() {
                   {image.thumbnail_url || image.preview_url ? (
                     <img
                       alt={image.title || `Pixiv ${image.pixiv_id} page ${image.page_index}`}
-                      src={image.thumbnail_url || image.preview_url || ""}
+                      src={apiUrl(image.thumbnail_url || image.preview_url || "")}
                     />
                   ) : (
                     <ImageOff size={22} aria-hidden="true" />
@@ -310,6 +319,67 @@ export default function GalleryPage() {
         <button className="button secondary load-more" onClick={() => load(nextCursor)} type="button">
           Load more
         </button>
+      ) : null}
+
+      {deleteConfirmOpen ? (
+        <div
+          className="modal-backdrop"
+          onClick={() => {
+            if (!deleteLoading) setDeleteConfirmOpen(false);
+          }}
+          role="presentation"
+        >
+          <section
+            className="task-modal delete-confirm-modal"
+            aria-label="Confirm image deletion"
+            aria-modal="true"
+            role="dialog"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="image-detail-head">
+              <div className="panel-title modal-title">
+                <Trash2 size={18} aria-hidden="true" />
+                <h2>Delete selected images</h2>
+              </div>
+              <button
+                aria-label="Cancel delete"
+                className="icon-button"
+                disabled={deleteLoading}
+                onClick={() => setDeleteConfirmOpen(false)}
+                type="button"
+              >
+                <X size={16} aria-hidden="true" />
+              </button>
+            </div>
+            <p className="quiet">
+              Delete {selectedIds.size} selected image{selectedIds.size === 1 ? "" : "s"} from disk
+              and SQLite?
+            </p>
+            <div className="setting-actions">
+              <button
+                className="button secondary"
+                disabled={deleteLoading}
+                onClick={() => setDeleteConfirmOpen(false)}
+                type="button"
+              >
+                Cancel
+              </button>
+              <button
+                className="button danger"
+                disabled={deleteLoading}
+                onClick={confirmDeleteSelected}
+                type="button"
+              >
+                {deleteLoading ? (
+                  <Loader2 className="spin" size={16} aria-hidden="true" />
+                ) : (
+                  <Trash2 size={16} aria-hidden="true" />
+                )}
+                Delete
+              </button>
+            </div>
+          </section>
+        </div>
       ) : null}
 
       {detailLoading || detailError || selectedImage ? (
@@ -351,7 +421,7 @@ export default function GalleryPage() {
                   {selectedImage.preview_url ? (
                     <img
                       alt={selectedImage.title || `Pixiv ${selectedImage.pixiv_id}`}
-                      src={selectedImage.preview_url}
+                      src={apiUrl(selectedImage.preview_url)}
                     />
                   ) : (
                     <ImageOff size={28} aria-hidden="true" />

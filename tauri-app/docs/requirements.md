@@ -1,0 +1,54 @@
+# Tauri Desktop Requirements
+
+## 当前阶段
+
+阶段：Desktop MVP + P3a 未签名 `.dmg` 最小分发闭环。
+
+目标是在 macOS 上跑通一个可开发验证的 Tauri 桌面壳。该壳引用现有
+`src/frontend` 前端与 `src/backend` Rust 后端，不复制业务代码。
+
+## 范围
+
+- 新建并维护 `tauri-app` 作为桌面应用项目源码目录。
+- Tauri 开发模式加载现有 Next.js 前端。
+- Tauri 生产打包优先使用 Next 静态导出产物，由 `.app` 内嵌加载。
+- Tauri 后端通过 Rust path dependency 引用现有 `src/backend`。
+- 桌面端每次启动绑定 `127.0.0.1` 随机可用端口，避免固定端口冲突。
+- Tauri 创建 WebView 时注入运行时 API base URL，前端优先使用该值访问本地 Rust API。
+- 前端 API 层保留环境变量切换后端 base URL，作为 Web 开发兼容路径。
+- 桌面端默认下载目录迁移到 `~/Downloads/Pixiv Platform/`。
+- 桌面端默认 SQLite 放在默认下载目录下的 `pixiv_platform.sqlite3`，除非运行时显式配置
+  `PIXIV_PLATFORM_DB_PATH`。
+- 首次迁移时，如果新桌面 SQLite 不存在，或只包含初始化默认设置且旧
+  `output/pixiv_platform.sqlite3` 仍包含用户配置/图库数据，则从旧项目 `output/`
+  自动迁移数据库和已下载图片到 `~/Downloads/Pixiv Platform/`。
+- 平台 Settings 中下载目录配置应通过系统文件夹选择器选择，不要求用户手动输入目录路径。
+- 在用户没有 Apple Developer Program / Apple 开发者认证背景的前提下，先产出未签名、
+  未公证的 macOS `.dmg`，用于 GitHub Release 小范围分发验证。
+- 分发文档需说明：未签名/未公证 `.dmg` 上传 GitHub Release 后，其他 macOS 用户可能遇到
+  Gatekeeper 拦截；但运行已打包应用不需要安装 Rust、Cargo、Node、npm 或 TypeScript。
+
+## 非目标
+
+- 不做 Windows 桌面端。
+- 不做手机端。
+- 不做代码签名、Apple notarization、公证或自动更新。
+- 不迁移到 macOS Application Support 数据目录；用户已确认桌面默认目录使用
+  `~/Downloads/Pixiv Platform/`。
+- 不复制前端或后端源码到 `tauri-app`。
+- 不重写现有 HTTP API 为 Tauri commands。
+
+## 约束
+
+- 遵循 spec-coding：先更新文档，再实现，再验证，再同步进度。
+- 用户未确认前，不做破坏性清理。
+- 不提交 secret、cookie、API key 或本地私有路径。
+- 现有 Web 开发体验应保持可用。
+- Git 操作默认只改文件不提交，除非用户明确要求。
+
+## 待办优化
+
+- 后续如需更正式的数据分层，再评估是否把 SQLite 迁移到
+  `~/Library/Application Support/Pixiv Platform/`。
+- 为随机端口启动继续补充更完整的崩溃诊断。
+- 后续如需公开正式分发，再评估 Apple 账号、证书、签名、公证和自动更新流程。

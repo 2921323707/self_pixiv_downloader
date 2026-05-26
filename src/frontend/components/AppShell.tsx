@@ -8,8 +8,7 @@ import {
   GalleryHorizontalEnd,
   Home,
   ListChecks,
-  Settings,
-  Sparkles
+  Settings
 } from "lucide-react";
 import { fetchSettings } from "../lib/api";
 
@@ -68,7 +67,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <header className="topbar">
         <Link className="brand" href="/" aria-label="Pixiv Platform home">
           <span className="brand-mark" aria-hidden="true">
-            <Sparkles size={18} />
+            <img src="/app-icon.png" alt="" />
           </span>
           <span>
             <strong>Pixiv Platform</strong>

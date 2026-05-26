@@ -6,13 +6,14 @@ use std::sync::Arc;
 
 use axum::body::Body;
 use axum::extract::{Path, Query, State};
-use axum::http::StatusCode;
 use axum::http::header::{CACHE_CONTROL, CONTENT_TYPE};
+use axum::http::{Method, StatusCode};
 use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post, put};
 use axum::{Json, Router};
 use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc;
+use tower_http::cors::{Any, CorsLayer};
 
 use crate::ai::{
     AiClient, DeepSeekConfig, DeepSeekConnectionStatus, DeepSeekHttpClient, SmartParseInput,
@@ -170,6 +171,7 @@ impl AiClientFactory for EnvAiClientFactory {
 
 pub fn router(state: AppState) -> Router {
     Router::new()
+        .route("/api/health", get(get_health))
         .route("/api/download/single", post(post_download_single))
         .route("/api/downloads/single", post(post_download_single))
         .route("/api/downloads/bookmarks", post(post_download_bookmarks))
@@ -190,10 +192,23 @@ pub fn router(state: AppState) -> Router {
         .route("/api/tasks", get(list_tasks))
         .route("/api/tasks/{task_id}", get(get_task))
         .with_state(state)
+        .layer(
+            CorsLayer::new()
+                .allow_origin(Any)
+                .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE])
+                .allow_headers(Any),
+        )
 }
 
 pub async fn serve(state: AppState, addr: SocketAddr) -> Result<(), std::io::Error> {
     let listener = tokio::net::TcpListener::bind(addr).await?;
+    serve_listener(state, listener).await
+}
+
+pub async fn serve_listener(
+    state: AppState,
+    listener: tokio::net::TcpListener,
+) -> Result<(), std::io::Error> {
     axum::serve(listener, router(state)).await
 }
 
@@ -523,6 +538,19 @@ pub struct DeepSeekConnectionTestResponse {
     pub configured: bool,
     pub status: String,
     pub model: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct HealthResponse {
+    pub status: String,
+}
+
+async fn get_health() -> Json<ApiEnvelope<HealthResponse>> {
+    Json(ApiEnvelope {
+        data: HealthResponse {
+            status: "ok".to_owned(),
+        },
+    })
 }
 
 async fn post_download_single(
@@ -1875,7 +1903,7 @@ mod tests {
     use std::time::Duration;
 
     use axum::Router;
-    use axum::body::to_bytes;
+    use axum::body::{Body, to_bytes};
     use axum::http::{Method, Request};
     use tokio::time::sleep;
     use tower::ServiceExt;
@@ -2363,6 +2391,30 @@ mod tests {
             ),
             root,
         )
+    }
+
+    #[tokio::test]
+    async fn api_health_returns_ok() {
+        let (state, root) = test_state("health");
+        let app = router(state);
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method(Method::GET)
+                    .uri("/api/health")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), axum::http::StatusCode::OK);
+        let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+        let envelope: ApiEnvelope<super::HealthResponse> = serde_json::from_slice(&body).unwrap();
+        assert_eq!(envelope.data.status, "ok");
+
+        let _ = fs::remove_dir_all(root);
     }
 
     #[tokio::test]
