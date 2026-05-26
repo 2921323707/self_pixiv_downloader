@@ -261,7 +261,7 @@ export default function GalleryPage() {
 
       {images.length > 0 ? (
         <section className="gallery-grid" aria-label="Indexed images">
-          {images.map((image) => {
+          {images.map((image, index) => {
             const selected = selectedIds.has(image.image_id);
             return (
               <button
@@ -279,8 +279,9 @@ export default function GalleryPage() {
                   }}
                 >
                   {image.thumbnail_url || image.preview_url ? (
-                    <img
+                    <GalleryPreviewImage
                       alt={image.title || `Pixiv ${image.pixiv_id} page ${image.page_index}`}
+                      delayMs={Math.min(index, 12) * 120}
                       src={apiUrl(image.thumbnail_url || image.preview_url || "")}
                     />
                   ) : (
@@ -421,6 +422,7 @@ export default function GalleryPage() {
                   {selectedImage.preview_url ? (
                     <img
                       alt={selectedImage.title || `Pixiv ${selectedImage.pixiv_id}`}
+                      decoding="async"
                       src={apiUrl(selectedImage.preview_url)}
                     />
                   ) : (
@@ -454,5 +456,47 @@ export default function GalleryPage() {
         </div>
       ) : null}
     </div>
+  );
+}
+
+function GalleryPreviewImage({
+  alt,
+  delayMs,
+  src
+}: {
+  alt: string;
+  delayMs: number;
+  src: string;
+}) {
+  const [ready, setReady] = useState(delayMs === 0);
+  const [retry, setRetry] = useState(0);
+
+  useEffect(() => {
+    setRetry(0);
+    setReady(delayMs === 0);
+    if (delayMs === 0) return;
+
+    const timeoutId = window.setTimeout(() => setReady(true), delayMs);
+    return () => window.clearTimeout(timeoutId);
+  }, [delayMs, src]);
+
+  if (!ready) {
+    return null;
+  }
+
+  const retrySrc = retry === 0 ? src : `${src}${src.includes("?") ? "&" : "?"}retry=${retry}`;
+
+  return (
+    <img
+      alt={alt}
+      decoding="async"
+      loading="lazy"
+      onError={() => {
+        if (retry < 2) {
+          window.setTimeout(() => setRetry((current) => current + 1), 350 * (retry + 1));
+        }
+      }}
+      src={retrySrc}
+    />
   );
 }

@@ -57,6 +57,9 @@
   已重新生成且均被 `.gitignore` 覆盖。
 - `tauri-app/src-tauri/gen/` 是 Tauri 自动生成 schema 目录，已加入 `.gitignore`，不要提交。
 - Settings 中 `download_base_path` 已改为桌面文件夹选择器选择并自动保存，不再要求手动输入。
+- 2026-05-26 已修复桌面 app Gallery 偶发预览空白问题：根因是 Gallery 列表在 Tauri macOS WebView 内并发加载多张原图，详情页单张加载所以正常。当前实现已将 Gallery 列表预览改为错峰加载、`loading="lazy"`、`decoding="async"`，失败后最多重试两次；后端 `GET /api/images/{image_id}/file` 响应已补 `Content-Length` 并有测试断言。
+- 用户已确认 Gallery 预览修复有效；本轮已更新文档并准备提交推送。
+- Gallery 预览稳定性修复验证已通过：`cd src/frontend && npm run build`、`cd src/frontend && NEXT_OUTPUT_EXPORT=1 npm run build`、`cd src/backend && cargo test images::tests::req_img_004 --lib`、`cd src/backend && cargo test api::tests::req_img_002_req_ui_005_get_images_returns_gallery_metadata --lib`、`cd src/backend && cargo test api::tests::req_img_004 --lib`、`cd tauri-app && npm run build`。
 - 热缓存测速结果：Tauri `cargo check` 约 0.78s；前端 lint 约 1.07s；Next 静态导出约 4.92s；完整 Tauri build 约 26.58s。
 - Web / 后端独立运行默认仍沿用项目 `output/`；Tauri 桌面端默认目录使用
   `~/Downloads/Pixiv Platform/`。
@@ -76,9 +79,8 @@
 
 下一阶段候选：
 
-1. GitHub commit：如用户明确确认，可把当前桌面化阶段作为一个提交；建议 commit message 为
-   `feat: add macOS Tauri desktop packaging`。
-2. P3a 人工分发复核：重新 build 后，用户可手动打开 `.dmg`，拖入 Applications 后启动，确认小范围分发体验。
+1. P3a 人工分发复核：用户可手动打开最新 `.dmg`，拖入 Applications 后启动，确认小范围分发体验。
+2. Gallery Quality / Thumbnail Cache：当前修复已稳定原图预览链路；下一阶段建议实现真实缩略图缓存，避免列表长期加载原图。
 3. P3 后续评估：签名、公证、自动更新仅作为未来正式分发路径评估；不要把账号、证书或
    secret 写入仓库或文档。
 4. P1 后续：如需更正式的数据分层，再评估 SQLite 是否迁移到 macOS Application Support。

@@ -4,13 +4,13 @@
 
 ## 一句话项目状态
 
-这是一个本地优先的 Pixiv AI 下载与智能检索平台。当前采用 downloader-first 路线，已跑通真实 Pixiv 单作品下载，并已完成 SQLite migration、图片仓储、settings 仓储、DB-aware downloader、任务状态持久化、确定性测试脚本结构、薄 Axum API wrapper、in-process Tokio 后台任务队列、Next.js 前端工作台、Phase 4B gallery/settings/task-list 最小数据 API 接线、Phase 4D Gallery 文件预览、Phase 4E Gallery 删除、Phase 5A 作者批量下载、Phase 5B 收藏批量下载、Phase 6A DeepSeek 智能解析、Phase 6B smart 标签搜索批量下载、Phase 7A Home Dashboard 首页真实化、Phase 7B UI Layout / Interaction Polish，以及 Phase 7B follow-up UI 格式检查与交互修补。按 downloader-first 产品边界，当前可作为 v1.0.0 最终形态。
+这是一个本地优先的 Pixiv AI 下载与智能检索平台。当前采用 downloader-first 路线，已跑通真实 Pixiv 单作品下载，并已完成 SQLite migration、图片仓储、settings 仓储、DB-aware downloader、任务状态持久化、确定性测试脚本结构、薄 Axum API wrapper、in-process Tokio 后台任务队列、Next.js 前端工作台、Phase 4B gallery/settings/task-list 最小数据 API 接线、Phase 4D Gallery 文件预览、Phase 4E Gallery 删除、Phase 5A 作者批量下载、Phase 5B 收藏批量下载、Phase 6A DeepSeek 智能解析、Phase 6B smart 标签搜索批量下载、Phase 7A Home Dashboard 首页真实化、Phase 7B UI Layout / Interaction Polish、Phase 7B follow-up UI 格式检查与交互修补，以及 2026-05-26 Tauri Gallery 预览稳定性修复。按 downloader-first 产品边界，当前可作为 v1.0.0 最终形态；桌面壳当前锚定 v1.1.0。
 
 ## 当前阶段
 
-当前阶段：**v1.0.0 Final Delivery** 已完成并冻结为当前交付版本。
+当前阶段：**v1.0.0 Final Delivery** 已完成并冻结为当前交付版本；Tauri 桌面壳当前锚定 **v1.1.0** 稳定性收尾。
 
-2026-05-22 手动浏览器锚点：用户已确认在前端输入 Pixiv 作品 ID 可以成功下载，并确认 Author Batch 和 Bookmarks Batch 可用。2026-05-23：Smart Retrieval 已从“解析标签”推进到“解析后入队 smart 批量下载”，并经用户手动检查当前没有明显问题。同日 Home Dashboard 已在本地浏览器确认可通过真实 API 展示任务、图库预览和配置状态，控制台无错误。2026-05-23：Phase 7B UI polish 已完成确定性前端检查，未新增后端 API。Phase 7B follow-up 已补 Home banner 前端候选筛选、Home panel 底部对齐、Home command center / Rust Core Driver / Performance Watch、Smart 正/负 tag chip 手动输入、API client 空/非 JSON 响应保护、Gallery drawer / Tasks modal 关闭交互和移动端布局锚点，仍未新增后端 API。当前策略已调整为：冻结当前形态为 v1.0.0 final delivery，并由标准 `main` 分支承载交付主线。
+2026-05-22 手动浏览器锚点：用户已确认在前端输入 Pixiv 作品 ID 可以成功下载，并确认 Author Batch 和 Bookmarks Batch 可用。2026-05-23：Smart Retrieval 已从“解析标签”推进到“解析后入队 smart 批量下载”，并经用户手动检查当前没有明显问题。同日 Home Dashboard 已在本地浏览器确认可通过真实 API 展示任务、图库预览和配置状态，控制台无错误。2026-05-23：Phase 7B UI polish 已完成确定性前端检查，未新增后端 API。Phase 7B follow-up 已补 Home banner 前端候选筛选、Home panel 底部对齐、Home command center / Rust Core Driver / Performance Watch、Smart 正/负 tag chip 手动输入、API client 空/非 JSON 响应保护、Gallery drawer / Tasks modal 关闭交互和移动端布局锚点，仍未新增后端 API。2026-05-26：定位并修复 Tauri 桌面 Gallery 偶发预览空白问题，原因是列表在 macOS WebView 内并发加载多张原图，详情页单张加载因此正常；修复为列表预览错峰/lazy/async decode/失败重试，并给后端图片文件响应补 `Content-Length`。当前策略已调整为：冻结当前形态为 v1.0.0 final delivery，并由标准 `main` 分支承载交付主线；桌面壳按 v1.1.0 继续小范围分发稳定化。
 
 ## 当前真实边界
 
@@ -29,7 +29,7 @@
 - `GET /api/tasks`
 - `GET /api/images`
 - `GET /api/images/{image_id}`
-- `GET /api/images/{image_id}/file`
+- `GET /api/images/{image_id}/file`，响应带 `Content-Length`
 - `DELETE /api/images/{image_id}`
 - `POST /api/images/delete-batch`
 - `GET /api/settings`
@@ -61,7 +61,7 @@ v1.x / v2 候选，不属于 v1.0.0 阻塞：
 - Download 页已从左大栏/右堆叠改为 Single / Author / Bookmarks / Smart 顶部 tabs 工作台
 - Download 页发起的单作品任务会使用 Settings 保存的 Pixiv cookie 和 download_base_path
 - Tasks 页已真实对接 task-id 轮询 API 和任务列表 API，Recent Tasks 默认 10 条，可展开更多，点击后用 modal 动态加载进度/items/logs
-- Gallery 页已真实对接图片 metadata 列表 API，可通过安全 file endpoint 显示本地图片预览，点击图片打开右侧详情 drawer，drawer 支持关闭按钮、遮罩和 ESC 关闭，并支持多选删除本地文件和 SQLite 索引
+- Gallery 页已真实对接图片 metadata 列表 API，可通过安全 file endpoint 显示本地图片预览；Tauri 桌面列表预览已错峰/lazy/async decode 并支持失败重试；点击图片打开右侧详情 drawer，drawer 支持关闭按钮、遮罩和 ESC 关闭，并支持多选删除本地文件和 SQLite 索引
 - Settings 页已真实对接 public settings list/save API、Pixiv test、DeepSeek test，secret 显示保持 masked，并按通用/外观/Pixiv/DeepSeek/Storage 分类展示
 - Home 页已真实复用 `GET /api/tasks`、`GET /api/images`、`GET /api/settings` 展示最近 3 条任务、状态摘要、优先 normal 且横向候选的最近图片 banner、快速入口、配置状态、本地图库提示、Rust 核心驱动注解、性能观察和后续能力槽
 - Top10 / Random 仍未完成，但已从 v1.0.0 阻塞项转为后续 discovery modes
@@ -154,6 +154,7 @@ PIXIV_PHPSESSID=... ./tests/e2e/live_single_download.sh
 - Phase 6B Smart Retrieval 下载闭环已完成：`POST /api/smart/download`、Pixiv 标签搜索、`smart` task worker、`smart_retrievals` provenance、Download 智能下载入队
 - Phase 7A Home Dashboard 首页真实化已完成：真实 task/image/settings 工作台，不暴露 secret
 - Phase 7B UI polish 第一版已完成：Download tabs、Gallery drawer、Tasks modal、Settings 分类、Home normal banner
+- 2026-05-26 Tauri Gallery 预览稳定性修复已完成：列表预览不再瞬间并发解码全部原图，图片文件端点返回 `Content-Length`
 - 2026-05-22 用户手动浏览器验证已通过：前端输入 Pixiv 作品 ID 后下载成功
 - 2026-05-22 用户手动浏览器验证已通过：Author Batch 下载成功
 - 2026-05-22 用户手动浏览器验证已通过：Bookmarks Batch 下载成功

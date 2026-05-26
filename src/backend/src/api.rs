@@ -6,7 +6,7 @@ use std::sync::Arc;
 
 use axum::body::Body;
 use axum::extract::{Path, Query, State};
-use axum::http::header::{CACHE_CONTROL, CONTENT_TYPE};
+use axum::http::header::{CACHE_CONTROL, CONTENT_LENGTH, CONTENT_TYPE};
 use axum::http::{Method, StatusCode};
 use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post, put};
@@ -929,7 +929,7 @@ async fn get_image_file(
                 "image file could not be read",
             )
         })?;
-        Ok::<_, AppError>((file.content_type, bytes))
+        Ok::<_, AppError>((file.content_type.to_owned(), bytes.len().to_string(), bytes))
     })
     .await
     .map_err(|error| AppError::new(ErrorCode::InternalError, error.to_string()))?
@@ -947,9 +947,10 @@ async fn get_image_file(
     Ok((
         [
             (CONTENT_TYPE, file.0),
-            (CACHE_CONTROL, "private, max-age=60"),
+            (CONTENT_LENGTH, file.1),
+            (CACHE_CONTROL, "private, max-age=60".to_owned()),
         ],
-        file.1,
+        file.2,
     )
         .into_response())
 }
@@ -2613,6 +2614,13 @@ mod tests {
                 .get(axum::http::header::CONTENT_TYPE)
                 .unwrap(),
             "image/jpeg"
+        );
+        assert_eq!(
+            response
+                .headers()
+                .get(axum::http::header::CONTENT_LENGTH)
+                .unwrap(),
+            "18"
         );
         let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
         assert_eq!(body.as_ref(), b"seeded image bytes");

@@ -4,8 +4,8 @@
 
 日期：2026-05-26
 
-阶段：Desktop MVP dev 模式、`.app` 打包 MVP、随机端口、健康检查、正式图标、Gallery 删除修复、P2 启动诊断补强、P1 桌面默认下载目录迁移与旧库自动恢复、P2 基础菜单、P3a 未签名 `.dmg` 最小闭环均已跑通；用户已完成 P2 手动测试并确认正常；已完成一次热缓存测速、P3a `.dmg` 验证与残留清理。
-P3a 已产出未签名、未公证 `.dmg`，并完成本机挂载验证；随后已清理可再生成的本地构建产物，并在版本号锚定为 `v1.1.0` 后重新执行最终 build，当前本地已有 `1.1.0` `.app` / `.dmg` 产物。
+阶段：Desktop MVP dev 模式、`.app` 打包 MVP、随机端口、健康检查、正式图标、Gallery 删除修复、P2 启动诊断补强、P1 桌面默认下载目录迁移与旧库自动恢复、P2 基础菜单、P3a 未签名 `.dmg` 最小闭环、Tauri Gallery 预览稳定性修复均已跑通；用户已完成 P2 手动测试并确认正常；已完成一次热缓存测速、P3a `.dmg` 验证与残留清理。
+P3a 已产出未签名、未公证 `.dmg`，并完成本机挂载验证；随后已清理可再生成的本地构建产物，并在版本号锚定为 `v1.1.0` 后重新执行最终 build。2026-05-26 修复桌面 Gallery 偶发预览空白后再次执行 Tauri release build，当前本地已有更新后的 `1.1.0` `.app` / `.dmg` 产物。
 
 用户确认：
 
@@ -42,6 +42,8 @@ P3a 已产出未签名、未公证 `.dmg`，并完成本机挂载验证；随后
 - 用户确认按没有 Apple Developer Program / Apple 开发者认证背景推进 P3a 未签名 `.dmg`
   最小闭环，不做签名、公证、自动更新。
 - 用户要求总结 macOS 桌面端完成度、清理残留文件、锚定当前任务进度，并考虑 GitHub commit。
+- 用户反馈桌面 app Gallery 页面偶发随机预览图片刷不出来，但点进详情后正常；已定位为列表并发加载原图导致 macOS WebView 偶发预览空白，并完成稳定性修复。
+- 用户确认该 Gallery 预览修复有效，要求锚定进度、更新文档、add、commit、push，并生成下一阶段规划和新会话提示词。
 
 ## 已完成
 
@@ -105,13 +107,19 @@ P3a 已产出未签名、未公证 `.dmg`，并完成本机挂载验证；随后
 - 执行最终 release build 后，当前本地产物为
   `tauri-app/src-tauri/target/release/bundle/macos/Pixiv Platform.app` 和
   `tauri-app/src-tauri/target/release/bundle/dmg/Pixiv Platform_1.1.0_aarch64.dmg`。
+- 修复 Tauri Gallery 偶发预览空白：
+  Gallery 列表预览改为错峰加载、`loading="lazy"`、`decoding="async"`，失败后最多重试两次；
+  后端 `GET /api/images/{image_id}/file` 响应补充 `Content-Length`，并新增测试断言。
+- Gallery 预览稳定性修复后重新执行 `cd tauri-app && npm run build`，成功产出更新后的
+  `tauri-app/src-tauri/target/release/bundle/macos/Pixiv Platform.app` 和
+  `tauri-app/src-tauri/target/release/bundle/dmg/Pixiv Platform_1.1.0_aarch64.dmg`。
 
 ## 当前状态
 
 - Desktop MVP P0 收尾、主页面 logo 替换、Gallery 删除交互修复、P2 启动诊断补强、
-  P1 桌面默认下载目录迁移与旧库自动恢复、P2 基础菜单、P3a 未签名 `.dmg` 最小闭环完成并锚定；
+  P1 桌面默认下载目录迁移与旧库自动恢复、P2 基础菜单、P3a 未签名 `.dmg` 最小闭环、Tauri Gallery 预览稳定性修复完成并锚定；
   P2 `.app` 用户手动测试正常，P3a `.dmg` 本机挂载验证通过，热缓存测速已记录。当前版本号
-  锚定为 `v1.1.0`，本地已有最终 `.app` / `.dmg` 构建产物，但这些构建产物由 `.gitignore`
+  锚定为 `v1.1.0`，本地已有更新后的 `.app` / `.dmg` 构建产物，但这些构建产物由 `.gitignore`
   忽略，不纳入提交。
   当前无进行中的实现任务。
 
@@ -119,11 +127,11 @@ P3a 已产出未签名、未公证 `.dmg`，并完成本机挂载验证；随后
 
 建议按低风险到高正式化程度推进：
 
-1. GitHub commit：建议在用户确认后，把本轮桌面化改动作为一个阶段性提交；推荐下一版本号为
-   `v1.1.0`，桌面壳版本已同步为 `1.1.0`。
-2. P3a 人工分发复核：重新 build 后，用户可手动打开 `.dmg`，拖入 Applications 后启动，确认小范围分发体验。
+1. P3a 人工分发复核：用户可手动打开最新 `.dmg`，拖入 Applications 后启动，确认小范围分发体验。
+2. Gallery Quality / Thumbnail Cache：当前修复已稳定原图预览链路；下一阶段建议生成真实小缩略图，避免列表长期加载原图。
 3. P1 后续数据正式化：如需更正式的数据分层，再评估 SQLite 是否从
    `~/Downloads/Pixiv Platform/` 迁移到 `~/Library/Application Support/Pixiv Platform/`。
+4. P3 后续正式分发评估：签名、公证、自动更新仅作为未来路径；当前仍按未签名 `.dmg` 小范围分发。
 
 新会话首轮提示词已整理到 `tauri-app/docs/next-session-prompt.md`。
 
@@ -249,6 +257,16 @@ curl -i http://127.0.0.1:3001/
   `cd tauri-app && npm run build` 通过，产出
   `tauri-app/src-tauri/target/release/bundle/dmg/Pixiv Platform_1.1.0_aarch64.dmg`。
   最终复核 `find . -name .DS_Store -print` 无输出。
+- Tauri Gallery 预览稳定性修复验证通过：
+  `cd src/frontend && npm run build`；
+  `cd src/frontend && NEXT_OUTPUT_EXPORT=1 npm run build`；
+  `cd src/backend && cargo test images::tests::req_img_004 --lib`；
+  `cd src/backend && cargo test api::tests::req_img_002_req_ui_005_get_images_returns_gallery_metadata --lib`；
+  `cd src/backend && cargo test api::tests::req_img_004 --lib`；
+  `cd tauri-app && npm run build`。
+  新 `.app` / `.dmg` 产物：
+  `tauri-app/src-tauri/target/release/bundle/macos/Pixiv Platform.app`；
+  `tauri-app/src-tauri/target/release/bundle/dmg/Pixiv Platform_1.1.0_aarch64.dmg`。
 
 观察到的非阻塞提示：
 

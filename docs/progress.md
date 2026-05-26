@@ -1,6 +1,6 @@
 # Project Progress
 
-Last updated: 2026-05-23
+Last updated: 2026-05-26
 
 ## Current Anchor
 
@@ -22,6 +22,8 @@ Implementation anchor on 2026-05-23: Phase 7B follow-up refined the first polish
 
 Release anchor on 2026-05-23: the project is frozen as **v1.0.0 Final Delivery**. The release scope is the stable local downloader/indexer/workbench loop, not every future product idea. Thumbnail cache, Top10/Random discovery modes, cancel/retry, richer edit/map APIs, and semantic search are optional post-delivery evolution tracks rather than v1.0.0 blockers.
 
+Desktop stability anchor on 2026-05-26: fixed an intermittent Tauri Gallery preview blank-image issue. Root cause was Gallery list previews loading full original files concurrently through the secure file endpoint inside the macOS WebView; detail view stayed reliable because it only requested one image. The frontend now staggers Gallery preview image loading, uses lazy/async image decode, and retries failed preview image loads with a cache-busting query. The backend image file endpoint now returns `Content-Length`, with API test coverage, so WebView local image responses are more deterministic.
+
 ## Current Reality Check
 
 Backend status: the downloader-first backend core is solid for the v1.0.0 vertical slice. The full long-term product backend is intentionally broader than v1.0.0.
@@ -36,6 +38,7 @@ Completed backend slice:
 - Task list API: `GET /api/tasks` with status/type/limit/cursor.
 - Gallery metadata APIs: `GET /api/images` and `GET /api/images/{image_id}` with filters and cursor pagination.
 - Gallery delete APIs: `DELETE /api/images/{image_id}` and `POST /api/images/delete-batch`.
+- Gallery file API now returns `Content-Length` for local image bytes, improving Tauri WebView preview stability.
 - Settings APIs: `GET /api/settings` and `PUT /api/settings/{key}` with repository-level allowlist validation and secret masking.
 - Settings-backed runtime resolution for single downloads: `pixiv_cookie` and `download_base_path`.
 - Default download root is repository `output/` via `project:output` when no explicit path is configured.
@@ -60,7 +63,7 @@ Frontend status: the current frontend is a working v1.0.0 workbench UI, not the 
 - Real integration exists for single-download submission, bookmark batch submission, author batch submission, Smart Retrieval parse preview and smart batch enqueue, settings-backed Pixiv cookie/download directory, DeepSeek settings/test, task-id polling, task list, gallery metadata, Gallery delete, and public settings list/save.
 - Home now shows a real dashboard by reusing `GET /api/tasks`, `GET /api/images`, and `GET /api/settings`, including a recent normal image banner.
 - Top10/Random download sections are still pending.
-- Gallery now renders real downloaded image previews through a secure file endpoint, supports multi-select hard delete, and opens image detail in a right-side drawer.
+- Gallery now renders real downloaded image previews through a secure file endpoint, staggers/lazy-loads list previews for desktop WebView stability, supports multi-select hard delete, and opens image detail in a right-side drawer.
 - Download uses a balanced tabbed workbench for Single / Author / Bookmarks / Smart instead of a large-left plus stacked-right layout.
 - Tasks opens live task progress/items/logs in a centered modal and keeps Recent Tasks compact by default.
 - Settings groups existing public settings into General, Appearance, Pixiv, DeepSeek, and Storage panels while keeping secrets masked.
@@ -130,6 +133,7 @@ The v1.0.0 Final Delivery shape is complete.
 | Add Smart Download API | Done | `POST /api/smart/download`, `src/backend/src/api.rs` |
 | Wire Download Smart enqueue | Done | `src/frontend/app/download/page.tsx`, `src/frontend/lib/api.ts`; parsed tags are editable before enqueue |
 | Add Phase 6B deterministic script | Done | `tests/stage/phase6b_smart_download.sh` |
+| Stabilize Tauri Gallery previews | Done | `src/frontend/app/gallery/page.tsx`, `src/backend/src/api.rs`; preview loads are staggered/lazy/retried and image file responses include `Content-Length` |
 
 ## Completed
 
