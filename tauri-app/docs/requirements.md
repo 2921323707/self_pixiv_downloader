@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-阶段：Desktop MVP + P3a 未签名 `.dmg` 最小分发闭环。
+阶段：Desktop MVP + P3a 未签名 `.dmg` 最小分发闭环 + Pixiv 登录态刷新完成。
 
 目标是在 macOS 上跑通一个可开发验证的 Tauri 桌面壳。该壳引用现有
 `src/frontend` 前端与 `src/backend` Rust 后端，不复制业务代码。
@@ -27,6 +27,12 @@
   未公证的 macOS `.dmg`，用于 GitHub Release 小范围分发验证。
 - 分发文档需说明：未签名/未公证 `.dmg` 上传 GitHub Release 后，其他 macOS 用户可能遇到
   Gatekeeper 拦截；但运行已打包应用不需要安装 Rust、Cargo、Node、npm 或 TypeScript。
+- Settings 中 Pixiv 连接应支持桌面端内置 Pixiv 登录窗口刷新 `PHPSESSID`，降低用户手动从浏览器
+  开发者工具复制 cookie 的成本。
+- Pixiv 登录态刷新必须在 Pixiv 官方页面完成登录，不采集、不保存、不代理用户 Pixiv 密码。
+- 自动获取到的 `PHPSESSID` 继续写入现有 `pixiv_cookie` setting，沿用后端 secret masking、
+  runtime settings 和 `POST /api/settings/test/pixiv` 验证流程。
+- Pixiv 登录态刷新成功后应自动关闭登录窗口，并在 Settings 主窗口显示不含 secret 的成功提示。
 
 ## 非目标
 
@@ -37,12 +43,15 @@
   `~/Downloads/Pixiv Platform/`。
 - 不复制前端或后端源码到 `tauri-app`。
 - 不重写现有 HTTP API 为 Tauri commands。
+- 不实现后端模拟 Pixiv 账号密码登录。
+- 不在 Web 端用 bookmarklet 或页面脚本读取 Pixiv cookie；桌面端走 Tauri WebView cookie store。
 
 ## 约束
 
 - 遵循 spec-coding：先更新文档，再实现，再验证，再同步进度。
 - 用户未确认前，不做破坏性清理。
 - 不提交 secret、cookie、API key 或本地私有路径。
+- 不在日志、文档、测试输出中打印完整 `PHPSESSID`；只允许输出是否存在、长度和非敏感元信息。
 - 现有 Web 开发体验应保持可用。
 - Git 操作默认只改文件不提交，除非用户明确要求。
 
@@ -52,3 +61,4 @@
   `~/Library/Application Support/Pixiv Platform/`。
 - 为随机端口启动继续补充更完整的崩溃诊断。
 - 后续如需公开正式分发，再评估 Apple 账号、证书、签名、公证和自动更新流程。
+- Pixiv 登录态刷新已完成正式实现与用户 live 验证；后续只做体验微调或错误提示增强。

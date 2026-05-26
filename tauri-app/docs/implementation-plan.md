@@ -65,3 +65,31 @@
 - [x] P3 分发评估：先按没有 Apple 开发者认证的现实条件推进未签名 `.dmg`，签名/公证只做后续说明。
 - [x] P3 `.dmg` 最小闭环：优先尝试未签名 `.dmg` 产物，记录产物路径和手动安装测试点。
 - [ ] P4 清理收束：清理项必须先确认，不删除用户未确认的本地产物。
+
+## Phase D7: Pixiv 登录态刷新
+
+目标：在 Tauri 桌面端提供内置 Pixiv 登录窗口，一键刷新 `PHPSESSID`，并复用现有
+`pixiv_cookie` 设置、secret masking 和 Pixiv connection test。
+
+- [x] 方案比较：App 内置登录窗口优先于浏览器扩展、OAuth 长期方案和后端模拟登录。
+- [x] 小规模可行性验证：Tauri 2.11.2 可读取 WebView cookie store；HttpOnly cookie 可读；
+  本地探针不输出完整 secret。
+- [x] 设计锚点：正式实现优先调用 `window.cookies()`，按 `PHPSESSID` 与 Pixiv 域名过滤；
+  `cookies_for_url()` 可作为辅助但不作为唯一路径。
+- [x] Tauri command：打开或聚焦 Pixiv 登录窗口，轮询 cookie store，找到 `PHPSESSID` 后返回
+  `{ value, domain, path, http_only, secure }` 中的非敏感元信息和值；日志只记录长度和状态。
+- [x] Settings UI：在 `pixiv_cookie` 行增加桌面端可见的 Login/Refresh 按钮；非 Tauri Web 环境显示
+  手动输入和 Test 作为 fallback。
+- [x] 保存闭环：前端拿到 cookie 后调用现有 `saveSetting("pixiv_cookie", value)`，随后自动调用
+  `testPixivConnection("144920810")` 或无作品 ID 的配置验证。
+- [x] 安全处理：获取成功后自动关闭 Pixiv 登录窗口；主 Settings 窗口弹出成功提示；不保留完整 cookie
+  到前端状态以外的可见文本；错误状态不泄漏 cookie。
+- [x] 验证：`cargo check`、前端 lint/build、Tauri build；live 验证由用户手动登录 Pixiv 完成并确认成功。
+
+实施顺序：
+
+实现结果：
+
+1. Tauri command 不直接写 SQLite，只返回 cookie 给前端。
+2. Settings 按钮保存到既有 `pixiv_cookie` setting，保留手动输入。
+3. 成功后自动 Pixiv Test、关闭登录窗口并弹出非敏感成功提示。

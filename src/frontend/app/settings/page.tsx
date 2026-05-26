@@ -24,6 +24,14 @@ const labels: Record<string, { title: string; icon: typeof KeyRound }> = {
 
 type ThemeId = "cyan-studio" | "sakura-light";
 
+type PixivSessionCookie = {
+  value: string;
+  domain: string | null;
+  path: string | null;
+  http_only: boolean | null;
+  secure: boolean | null;
+};
+
 const themeOptions = [
   { value: "cyan-studio", label: "Cyan Studio" },
   { value: "sakura-light", label: "Sakura Light" }
@@ -80,8 +88,10 @@ export default function SettingsPage() {
   const [testingPixiv, setTestingPixiv] = useState(false);
   const [testingDeepSeek, setTestingDeepSeek] = useState(false);
   const [selectingDownloadDirectory, setSelectingDownloadDirectory] = useState(false);
+  const [refreshingPixivLogin, setRefreshingPixivLogin] = useState(false);
   const [pixivTestResult, setPixivTestResult] = useState<string | null>(null);
   const [deepseekTestResult, setDeepseekTestResult] = useState<string | null>(null);
+  const isTauriDesktop = typeof window !== "undefined" && Boolean(window.__TAURI_INTERNALS__?.invoke);
 
   async function load() {
     setLoading(true);
@@ -177,6 +187,46 @@ export default function SettingsPage() {
       setError(caught instanceof Error ? caught.message : "Folder selection failed");
     } finally {
       setSelectingDownloadDirectory(false);
+    }
+  }
+
+  async function refreshPixivLogin(setting: PublicSetting) {
+    const invoke = window.__TAURI_INTERNALS__?.invoke;
+    if (!invoke) {
+      setError("Pixiv login refresh is only available in the Tauri desktop app.");
+      return;
+    }
+
+    setRefreshingPixivLogin(true);
+    setSavingKey(setting.key);
+    setSavedKey(null);
+    setPixivTestResult(null);
+    setDeepseekTestResult(null);
+    setError(null);
+    try {
+      const cookie = await invoke<PixivSessionCookie>("refresh_pixiv_phpsessid");
+      const saved = await saveSetting(setting.key, cookie.value);
+      setSettings((current) =>
+        current.map((item) => (item.key === saved.key ? saved : item))
+      );
+      setDrafts((current) => ({
+        ...current,
+        [saved.key]: saved.is_secret ? "" : settingValueToInput(saved.value)
+      }));
+      setSavedKey(saved.key);
+
+      const result = await testPixivConnection("144920810");
+      setPixivTestResult(
+        result.title
+          ? `Pixiv login refreshed: ${result.title}`
+          : `Pixiv login refreshed${cookie.domain ? ` for ${cookie.domain}` : ""}`
+      );
+      window.alert("Pixiv login refreshed successfully. The login window has been closed.");
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Pixiv login refresh failed");
+    } finally {
+      setRefreshingPixivLogin(false);
+      setSavingKey(null);
     }
   }
 
@@ -292,6 +342,7 @@ export default function SettingsPage() {
               const isSaving = savingKey === setting.key;
               const isDownloadPath = setting.key === "download_base_path";
               const isPickingDirectory = isDownloadPath && selectingDownloadDirectory;
+              const isPixivCookie = setting.key === "pixiv_cookie";
               const currentTheme = normalizeTheme(drafts[setting.key]);
 
               return (
@@ -343,10 +394,25 @@ export default function SettingsPage() {
                     {setting.key === "theme_id" && isSaving ? (
                       <Loader2 className="spin" size={16} aria-hidden="true" />
                     ) : null}
-                    {setting.key === "pixiv_cookie" ? (
+                    {isPixivCookie && isTauriDesktop ? (
                       <button
                         className="button secondary"
-                        disabled={testingPixiv || isSaving}
+                        disabled={refreshingPixivLogin || testingPixiv || isSaving}
+                        onClick={() => refreshPixivLogin(setting)}
+                        type="button"
+                      >
+                        {refreshingPixivLogin ? (
+                          <Loader2 className="spin" size={16} aria-hidden="true" />
+                        ) : (
+                          <KeyRound size={16} aria-hidden="true" />
+                        )}
+                        Refresh
+                      </button>
+                    ) : null}
+                    {isPixivCookie ? (
+                      <button
+                        className="button secondary"
+                        disabled={testingPixiv || refreshingPixivLogin || isSaving}
                         onClick={testPixiv}
                         type="button"
                       >
@@ -391,7 +457,11 @@ export default function SettingsPage() {
                     {setting.key !== "theme_id" && !isDownloadPath ? (
                       <button
                         className="button secondary"
-                        disabled={isSaving || (setting.is_secret && !drafts[setting.key])}
+                        disabled={
+                          isSaving ||
+                          refreshingPixivLogin ||
+                          (setting.is_secret && !drafts[setting.key])
+                        }
                         type="submit"
                       >
                         {isSaving ? (

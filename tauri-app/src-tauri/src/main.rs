@@ -11,10 +11,14 @@ use std::time::{Duration, Instant};
 
 use pixiv_platform_backend::api::{AppState, EnvPixivClientFactory, serve_listener};
 use pixiv_platform_backend::db;
+use serde::Serialize;
 use tauri::menu::{AboutMetadata, Menu, MenuBuilder, MenuItemBuilder, SubmenuBuilder};
+use tauri::webview::Cookie;
 use tauri::{Manager, Url, WebviewUrl, WebviewWindowBuilder};
 
 const MENU_RELOAD: &str = "pixiv-platform-reload";
+const PIXIV_LOGIN_WINDOW: &str = "pixiv-login";
+const PIXIV_LOGIN_URL: &str = "https://www.pixiv.net/";
 #[cfg(debug_assertions)]
 const MENU_TOGGLE_DEVTOOLS: &str = "pixiv-platform-toggle-devtools";
 
@@ -25,7 +29,11 @@ fn main() {
     tauri::Builder::default()
         .menu(create_app_menu)
         .on_menu_event(handle_menu_event)
-        .invoke_handler(tauri::generate_handler![select_download_directory])
+        .manage(logger.clone())
+        .invoke_handler(tauri::generate_handler![
+            select_download_directory,
+            refresh_pixiv_phpsessid
+        ])
         .setup(move |app| {
             let logger = logger.clone();
             match start_desktop(app, &logger) {
@@ -142,6 +150,89 @@ fn select_download_directory() -> Result<Option<String>, String> {
             Err(format!("folder picker failed: {}", error.trim()))
         }
     }
+}
+
+#[derive(Serialize)]
+struct PixivSessionCookie {
+    value: String,
+    domain: Option<String>,
+    path: Option<String>,
+    http_only: Option<bool>,
+    secure: Option<bool>,
+}
+
+#[tauri::command]
+async fn refresh_pixiv_phpsessid(
+    app: tauri::AppHandle,
+    logger: tauri::State<'_, DesktopLogger>,
+) -> Result<PixivSessionCookie, String> {
+    let login_window = open_or_focus_pixiv_login_window(&app)?;
+    let logger = logger.inner().clone();
+
+    tauri::async_runtime::spawn_blocking(move || {
+        let deadline = Instant::now() + Duration::from_secs(180);
+        while Instant::now() < deadline {
+            match login_window.cookies() {
+                Ok(cookies) => {
+                    if let Some(cookie) = cookies.into_iter().find(is_pixiv_phpsessid) {
+                        logger.log(&format!(
+                            "pixiv login window found PHPSESSID cookie with length {}",
+                            cookie.value().len()
+                        ));
+                        let session_cookie = PixivSessionCookie {
+                            value: cookie.value().to_owned(),
+                            domain: cookie.domain().map(str::to_owned),
+                            path: cookie.path().map(str::to_owned),
+                            http_only: cookie.http_only(),
+                            secure: cookie.secure(),
+                        };
+                        if let Err(error) = login_window.close() {
+                            logger.log(&format!(
+                                "pixiv login window could not be closed after cookie refresh: {error}"
+                            ));
+                        }
+                        return Ok(session_cookie);
+                    }
+                }
+                Err(error) => {
+                    logger.log(&format!("pixiv login window cookie read failed: {error}"));
+                }
+            }
+            std::thread::sleep(Duration::from_millis(750));
+        }
+
+        Err("Timed out waiting for Pixiv PHPSESSID. Please finish Pixiv login in the desktop window and try again.".to_owned())
+    })
+    .await
+    .map_err(|error| format!("Pixiv login task failed: {error}"))?
+}
+
+fn open_or_focus_pixiv_login_window(
+    app: &tauri::AppHandle,
+) -> Result<tauri::WebviewWindow, String> {
+    if let Some(window) = app.get_webview_window(PIXIV_LOGIN_WINDOW) {
+        window.show().map_err(|error| error.to_string())?;
+        window.set_focus().map_err(|error| error.to_string())?;
+        return Ok(window);
+    }
+
+    let url = Url::parse(PIXIV_LOGIN_URL).map_err(|error| error.to_string())?;
+    WebviewWindowBuilder::new(app, PIXIV_LOGIN_WINDOW, WebviewUrl::External(url))
+        .title("Pixiv Login")
+        .inner_size(1100.0, 820.0)
+        .min_inner_size(720.0, 560.0)
+        .resizable(true)
+        .build()
+        .map_err(|error| error.to_string())
+}
+
+fn is_pixiv_phpsessid(cookie: &Cookie<'_>) -> bool {
+    cookie.name() == "PHPSESSID" && cookie.domain().is_some_and(is_pixiv_cookie_domain)
+}
+
+fn is_pixiv_cookie_domain(domain: &str) -> bool {
+    let domain = domain.trim_start_matches('.').to_ascii_lowercase();
+    domain == "pixiv.net" || domain.ends_with(".pixiv.net")
 }
 
 fn start_desktop(

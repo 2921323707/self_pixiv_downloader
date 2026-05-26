@@ -74,6 +74,13 @@
 - [x] 推荐下一版本号 `v1.1.0`，并同步 Tauri 桌面壳版本为 `1.1.0`。
 - [x] `v1.1.0` 提交前最终 build 验证通过，`.dmg` 产物文件名为
   `Pixiv Platform_1.1.0_aarch64.dmg`。
+- [x] Pixiv 登录态刷新可行性验证：Tauri WebView cookie store 可读取 HttpOnly `PHPSESSID`；
+  正式实现建议用 `cookies()` 全量读取后按 Pixiv 域过滤。
+- [x] Pixiv 登录态刷新 Tauri command。
+- [x] Settings Pixiv Login/Refresh 按钮。
+- [x] 获取后复用现有 `pixiv_cookie` 保存和 Pixiv Test 验证。
+- [x] Pixiv 登录态刷新成功后自动关闭登录窗口并弹出非敏感成功提示。
+- [x] 用户手动 live 验证 Pixiv 登录刷新成功。
 - [ ] P3 签名、公证。
 - [ ] P3 自动更新。
 - [ ] P1 后续：如需更正式的数据分层，再评估 macOS Application Support。
@@ -92,3 +99,6 @@
 - `src/frontend/public/app-icon.png` 是前端品牌 logo 使用的图标副本。
 - `tauri-app/src-tauri/target/` 和 `tauri-app/node_modules/` 是本地构建/依赖产物，由根 `.gitignore` 覆盖；最终 build 验证后当前本地已重新生成，但不纳入提交。
 - 本轮已按用户要求清理残留；仍不做 git commit，除非用户明确确认。
+- 2026-05-26 复核：`.DS_Store` 已再次出现在根目录、`static/` 和 Tauri bundle 目录；
+  `src/frontend/.next`、`src/frontend/out`、`tauri-app/src-tauri/target`、`tauri-app/node_modules`
+  也因验证/build 重新生成；`src/frontend/.next/dev/lock` 存在。未获用户明确批准前不删除。

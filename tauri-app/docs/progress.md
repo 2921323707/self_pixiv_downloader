@@ -4,7 +4,7 @@
 
 日期：2026-05-26
 
-阶段：Desktop MVP dev 模式、`.app` 打包 MVP、随机端口、健康检查、正式图标、Gallery 删除修复、P2 启动诊断补强、P1 桌面默认下载目录迁移与旧库自动恢复、P2 基础菜单、P3a 未签名 `.dmg` 最小闭环、Tauri Gallery 预览稳定性修复均已跑通；用户已完成 P2 手动测试并确认正常；已完成一次热缓存测速、P3a `.dmg` 验证与残留清理。
+阶段：Desktop MVP dev 模式、`.app` 打包 MVP、随机端口、健康检查、正式图标、Gallery 删除修复、P2 启动诊断补强、P1 桌面默认下载目录迁移与旧库自动恢复、P2 基础菜单、P3a 未签名 `.dmg` 最小闭环、Tauri Gallery 预览稳定性修复均已跑通；用户已完成 P2 手动测试并确认正常；已完成一次热缓存测速、P3a `.dmg` 验证与残留清理；已完成 Pixiv 内置登录窗口抓取 `PHPSESSID` 的小规模可行性验证、正式实现、`.app` 打包和用户 live 验证。
 P3a 已产出未签名、未公证 `.dmg`，并完成本机挂载验证；随后已清理可再生成的本地构建产物，并在版本号锚定为 `v1.1.0` 后重新执行最终 build。2026-05-26 修复桌面 Gallery 偶发预览空白后再次执行 Tauri release build，当前本地已有更新后的 `1.1.0` `.app` / `.dmg` 产物。
 
 用户确认：
@@ -44,6 +44,13 @@ P3a 已产出未签名、未公证 `.dmg`，并完成本机挂载验证；随后
 - 用户要求总结 macOS 桌面端完成度、清理残留文件、锚定当前任务进度，并考虑 GitHub commit。
 - 用户反馈桌面 app Gallery 页面偶发随机预览图片刷不出来，但点进详情后正常；已定位为列表并发加载原图导致 macOS WebView 偶发预览空白，并完成稳定性修复。
 - 用户确认该 Gallery 预览修复有效，要求锚定进度、更新文档、add、commit、push，并生成下一阶段规划和新会话提示词。
+- 用户决定优先做 App 端内置 Pixiv 登录窗口抓取 `PHPSESSID`，并要求先进行独立小规模快速验证测试。
+- 用户确认可行性验证结果合理，要求锚定当前状态、更新文档、检查清理项、进行项目更新方案设计、
+  同步进度文档，并输出下一窗口省 Token 渐进式检索提示词。
+- 用户手动验证 Pixiv 内置登录窗口：成功打开官方 Pixiv 登录页、成功登录、Settings 显示 refreshed；
+  随后要求成功获取后自动关闭登录窗口，并弹出提示框。
+- 自动关闭登录窗口与成功提示实现后，用户重新验证成功，并要求锚定当前任务状态、进行相关测试、
+  更新文档、规划后续方向并生成新会话提示词。
 
 ## 已完成
 
@@ -113,6 +120,28 @@ P3a 已产出未签名、未公证 `.dmg`，并完成本机挂载验证；随后
 - Gallery 预览稳定性修复后重新执行 `cd tauri-app && npm run build`，成功产出更新后的
   `tauri-app/src-tauri/target/release/bundle/macos/Pixiv Platform.app` 和
   `tauri-app/src-tauri/target/release/bundle/dmg/Pixiv Platform_1.1.0_aarch64.dmg`。
+- Pixiv 登录态刷新可行性验证完成：
+  当前 `tauri 2.11.2` 支持 `WebviewWindow.cookies()` / `cookies_for_url()`；
+  临时 Tauri probe 确认 WebView 响应写入的 HttpOnly `PHPSESSID` 可被 Rust 侧读取；
+  `cookies_for_url()` 在本地 `127.0.0.1` 场景返回为空，但 `cookies()` 可读完整 store；
+  正式实现建议使用 `cookies()` 全量读取后按 `name == "PHPSESSID"` 和 Pixiv 域过滤。
+- 可行性 probe 临时代码已移除，移除后 `cd tauri-app/src-tauri && cargo check` 通过。
+- 已更新 Pixiv 登录态刷新相关文档：requirements、architecture、implementation-plan、checklist、testing、
+  progress、cleanup_candidates、next-session-prompt。
+- Pixiv 登录态刷新正式实现完成：
+  新增 Tauri command `refresh_pixiv_phpsessid`，打开或聚焦 Pixiv 官方登录窗口；
+  使用 `WebviewWindow.cookies()` 全量读取 cookie store，按 `name == "PHPSESSID"` 和 Pixiv 域过滤；
+  返回 cookie value 及 `{ domain, path, http_only, secure }` 非敏感元信息给前端；
+  日志只记录找到状态和 cookie 长度，不打印完整 cookie。
+- Settings `pixiv_cookie` 行在 Tauri 桌面端新增 Refresh 按钮；
+  非 Tauri 环境保留手动输入、Save 和 Test fallback。
+- Pixiv Refresh 获取成功后复用现有 `saveSetting("pixiv_cookie", value)` 保存，
+  自动执行 `POST /api/settings/test/pixiv`，并继续依赖现有 secret masking。
+- 根据用户反馈，刷新成功后自动关闭 Pixiv 登录窗口，并在 Settings 主窗口弹出不含 secret 的成功提示。
+- 用户手动 live 验证 Pixiv 内置登录刷新成功；最新 `.app` / `.dmg` 已重新 build。
+- 清理项复核完成：`.DS_Store` 再次出现在根目录、`static/` 和 Tauri bundle 目录；
+  `src/frontend/.next`、`src/frontend/out`、`tauri-app/src-tauri/target`、`tauri-app/node_modules`
+  因验证/build 重新生成；`src/frontend/.next/dev/lock` 存在。未获用户确认前不删除。
 
 ## 当前状态
 
@@ -121,17 +150,22 @@ P3a 已产出未签名、未公证 `.dmg`，并完成本机挂载验证；随后
   P2 `.app` 用户手动测试正常，P3a `.dmg` 本机挂载验证通过，热缓存测速已记录。当前版本号
   锚定为 `v1.1.0`，本地已有更新后的 `.app` / `.dmg` 构建产物，但这些构建产物由 `.gitignore`
   忽略，不纳入提交。
-  当前无进行中的实现任务。
+  Pixiv 登录态刷新 Phase D7 已完成正式实现和用户 live 验证。当前无代码实现中的任务，下一步建议进入
+  Gallery Quality / Thumbnail Cache、清理收束或小范围分发复核。
 
 ## 下一步
 
-建议按低风险到高正式化程度推进：
+建议按低风险到高用户价值推进：
 
-1. P3a 人工分发复核：用户可手动打开最新 `.dmg`，拖入 Applications 后启动，确认小范围分发体验。
-2. Gallery Quality / Thumbnail Cache：当前修复已稳定原图预览链路；下一阶段建议生成真实小缩略图，避免列表长期加载原图。
-3. P1 后续数据正式化：如需更正式的数据分层，再评估 SQLite 是否从
+1. Gallery Quality / Thumbnail Cache：当前列表预览稳定性已修复但仍加载原图；建议生成真实小缩略图，
+   降低 WebView 内存与网络压力，提升大图库滚动体验。
+2. 清理项确认：如果用户批准，可删除当前复核出的 `.DS_Store`、`.next`、`out`、Tauri target、
+   `node_modules` 等可再生成产物；否则保持现状。
+3. P3a 人工分发复核：用户可手动打开最新 `.dmg`，拖入 Applications 后启动，确认小范围分发体验。
+4. P1 后续数据正式化：如需更正式的数据分层，再评估 SQLite 是否从
    `~/Downloads/Pixiv Platform/` 迁移到 `~/Library/Application Support/Pixiv Platform/`。
-4. P3 后续正式分发评估：签名、公证、自动更新仅作为未来路径；当前仍按未签名 `.dmg` 小范围分发。
+5. P3 后续正式分发评估：签名、公证、自动更新仅作为未来路径；当前仍按未签名 `.dmg` 小范围分发。
+6. Pixiv Refresh 体验微调：可选增加取消按钮、剩余等待时间、或更细的错误提示；当前功能闭环已通过。
 
 新会话首轮提示词已整理到 `tauri-app/docs/next-session-prompt.md`。
 
@@ -267,6 +301,24 @@ curl -i http://127.0.0.1:3001/
   新 `.app` / `.dmg` 产物：
   `tauri-app/src-tauri/target/release/bundle/macos/Pixiv Platform.app`；
   `tauri-app/src-tauri/target/release/bundle/dmg/Pixiv Platform_1.1.0_aarch64.dmg`。
+- Pixiv 登录态刷新可行性验证通过：
+  临时 probe 编译验证 `cd tauri-app/src-tauri && cargo check` 通过；
+  GUI probe `PIXIV_COOKIE_PROBE=1 cargo run` 通过，输出显示 `cookies()` 可读到
+  `native_probe`、`PHPSESSID`、`visible_cookie`，且 `PHPSESSID` 为 `http_only=true`；
+  输出仅包含名称、长度和 httpOnly 状态，不包含完整 cookie 值。
+  临时代码移除后再次执行 `cd tauri-app/src-tauri && cargo check` 通过。
+- Pixiv 登录态刷新正式实现验证通过：
+  `cd tauri-app/src-tauri && cargo check`；
+  `cd src/frontend && npm run lint`；
+  `cd src/frontend && NEXT_OUTPUT_EXPORT=1 npm run build`；
+  `cd tauri-app && npm run build`。
+  首次 Tauri build 因 DMG 打包脚本留下两个临时挂载卷失败；卸载
+  `/Volumes/dmg.N0xdkD` 与 `/Volumes/dmg.LkNwGj` 后重跑通过。
+  新 `.app` / `.dmg` 产物：
+  `tauri-app/src-tauri/target/release/bundle/macos/Pixiv Platform.app`；
+  `tauri-app/src-tauri/target/release/bundle/dmg/Pixiv Platform_1.1.0_aarch64.dmg`。
+  用户手动 live 验证：官方 Pixiv 登录窗口可打开并登录，Settings 显示 refreshed；
+  后续自动关闭登录窗口与成功提示改动也已重新 build 并由用户确认成功。
 
 观察到的非阻塞提示：
 

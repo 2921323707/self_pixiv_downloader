@@ -2309,6 +2309,7 @@ name = "pixiv_platform_tauri_app"
 version = "1.1.0"
 dependencies = [
  "pixiv_platform_backend",
+ "serde",
  "tauri",
  "tauri-build",
  "tokio",

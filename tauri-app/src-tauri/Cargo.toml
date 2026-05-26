@@ -8,5 +8,6 @@ tauri-build = { version = "2", features = [] }
 
 [dependencies]
 pixiv_platform_backend = { path = "../../src/backend" }
+serde = { version = "1", features = ["derive"] }
 tauri = { version = "2", features = [] }
 tokio = { version = "1", features = ["rt-multi-thread"] }

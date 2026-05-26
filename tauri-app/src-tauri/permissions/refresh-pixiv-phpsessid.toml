@@ -1,0 +1,4 @@
+[[permission]]
+identifier = "refresh-pixiv-phpsessid"
+description = "Allows the main window to open the official Pixiv login window and read the Pixiv PHPSESSID cookie metadata."
+commands.allow = ["refresh_pixiv_phpsessid"]

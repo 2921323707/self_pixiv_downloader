@@ -116,6 +116,48 @@ Tauri 桌面壳提供原生基础菜单。菜单只承载安全的窗口和 WebV
 - File / Edit / Window：使用系统预定义的关闭、编辑和窗口操作。
 - View：Reload；Developer Tools 仅 debug 构建显示；Fullscreen 使用系统预定义项。
 
+## Pixiv 登录态刷新
+
+当前 Pixiv 下载链路依赖后端运行时设置中的 `pixiv_cookie`，其值为 Pixiv Web 登录态
+`PHPSESSID`。为降低用户定期手动获取 cookie 的成本，桌面端已实现内置 Pixiv 登录窗口：
+
+```text
+Settings Pixiv Login/Refresh
+  ├─ frontend invokes a Tauri command
+  ├─ Tauri opens a separate WebViewWindow at https://www.pixiv.net/
+  ├─ user signs in on Pixiv's official page
+  ├─ Tauri polls the login window cookie store
+  ├─ finds PHPSESSID from the Pixiv domain
+  ├─ returns the cookie value to Settings
+  ├─ frontend saves it through the existing PUT /api/settings/pixiv_cookie path
+  ├─ frontend runs POST /api/settings/test/pixiv for validation
+  ├─ Tauri closes the Pixiv login window after the cookie is captured
+  └─ Settings shows a non-sensitive success alert
+```
+
+设计约束：
+
+- 不采集 Pixiv 账号密码；登录发生在 Pixiv 官方页面。
+- 不把完整 `PHPSESSID` 写入日志、文档或测试输出。
+- 不绕过现有 settings repository；保存后仍由 `pixiv_cookie` secret masking 保护。
+- 手动输入 `pixiv_cookie` 继续保留为 fallback。
+- Web 端浏览器页面不能直接跨域读取 Pixiv cookie；该能力仅面向 Tauri 桌面端。
+- 获取成功后自动关闭 Pixiv 登录窗口；提示只说明刷新成功，不显示 cookie 值。
+
+2026-05-26 小规模验证结论：
+
+- 当前 `tauri 2.11.2` 支持 `WebviewWindow.cookies()` / `cookies_for_url()`。
+- 本地 Tauri 探针确认 WebView 响应写入的 HttpOnly `PHPSESSID` 可被 Rust 侧读取。
+- 本地探针中 `cookies_for_url()` 对 `127.0.0.1` 返回为空，但 `cookies()` 能读到完整 store。
+  正式实现优先使用 `cookies()`，再按 `name == "PHPSESSID"` 和 Pixiv 域过滤。
+
+2026-05-26 正式实现与 live 验证结论：
+
+- Tauri command `refresh_pixiv_phpsessid` 已实现并加入 capability permission。
+- Settings 中 `pixiv_cookie` 行在 Tauri 桌面端显示 Refresh；非 Tauri 环境保留手动输入和 Test。
+- 用户手动在官方 Pixiv 登录窗口登录后，应用成功刷新 `pixiv_cookie`、自动执行 Pixiv Test、
+  自动关闭登录窗口，并在 Settings 主窗口弹出成功提示。
+
 ## P3a 未签名 `.dmg` 分发模型
 
 在没有 Apple Developer Program / Apple 开发者认证背景的当前阶段，macOS 分发只做未签名、

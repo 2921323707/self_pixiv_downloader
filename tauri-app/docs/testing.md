@@ -108,6 +108,31 @@ Tauri bundle targets 扩展为 `app` 和 `dmg`，验证通过：
 `src/frontend/.next`、`src/frontend/out`、`tauri-app/node_modules`、`tauri-app/src-tauri/target`
 均为 `.gitignore` 覆盖的本地构建/依赖产物。
 
+2026-05-26：Pixiv 登录态刷新可行性验证：
+为避免直接改正式功能，先临时加入环境变量触发的 Tauri cookie probe，验证后已移除临时代码。
+验证通过：
+`cd tauri-app/src-tauri && cargo check`；
+`PIXIV_COOKIE_PROBE=1 cargo run`。探针启动临时本地 WebView，页面响应写入
+`Set-Cookie: PHPSESSID=...; HttpOnly`，Rust 侧通过 `WebviewWindow.cookies()` 读到该 cookie。
+探针同时确认原生 `set_cookie` 写入的 HttpOnly cookie 可读。输出只包含 cookie 名称、长度和
+`http_only` 状态，不打印完整值。观察：本地 `127.0.0.1` 场景中 `cookies_for_url()` 返回为空，
+但 `cookies()` 返回完整 cookie store；正式实现应优先 `cookies()` 后按 Pixiv 域过滤。
+临时代码清理后再次执行 `cd tauri-app/src-tauri && cargo check` 通过。
+
+2026-05-26：Pixiv 登录态刷新正式实现与 live 验证：
+实现 Tauri command `refresh_pixiv_phpsessid`，打开/聚焦官方 Pixiv 登录窗口，通过
+`WebviewWindow.cookies()` 全量读取 cookie store 后按 `PHPSESSID` 和 Pixiv 域过滤。Settings
+中 `pixiv_cookie` 行新增桌面端 Refresh 按钮，获取后通过既有 settings API 保存为
+`pixiv_cookie`，随后自动执行 Pixiv connection test。获取成功后自动关闭 Pixiv 登录窗口，并在
+Settings 主窗口弹出不含 secret 的成功提示。用户手动在 Pixiv 官方登录窗口完成登录后确认刷新成功。
+验证通过：
+`cd tauri-app/src-tauri && cargo check`；
+`cd src/frontend && npm run lint`；
+`cd src/frontend && NEXT_OUTPUT_EXPORT=1 npm run build`；
+`cd tauri-app && npm run build`。最新产物：
+`tauri-app/src-tauri/target/release/bundle/macos/Pixiv Platform.app` 和
+`tauri-app/src-tauri/target/release/bundle/dmg/Pixiv Platform_1.1.0_aarch64.dmg`。
+
 ## `.app` 打包验收
 
 首轮 `.app` MVP 打包验收按最小闭环执行：
@@ -132,6 +157,10 @@ Tauri bundle targets 扩展为 `app` 和 `dmg`，验证通过：
 16. 从旧项目 `output/` 升级到桌面默认目录时，旧 SQLite 中的 Pixiv cookie、图库记录和
     已下载图片路径应自动迁移，避免出现空图库或缺失 cookie。
 17. 未签名、未公证 `.dmg` 可产出，并可在本机挂载后看到 `.app` 与 Applications 拖拽链接。
+18. Settings 中 Pixiv Login/Refresh 可打开官方 Pixiv 登录窗口，用户登录后自动获取
+    `PHPSESSID` 并保存为 `pixiv_cookie`。
+19. Pixiv Login/Refresh 日志和 UI 不显示完整 `PHPSESSID`，保存后 Settings 仍显示 masked secret。
+20. Pixiv Login/Refresh 成功后自动运行 Pixiv connection test；失败时保留手动输入 fallback。
 
 ## API 验收点
 
@@ -147,6 +176,8 @@ Tauri bundle targets 扩展为 `app` 和 `dmg`，验证通过：
 - Pixiv cookie 和 DeepSeek key 只允许用户运行时输入。
 - live Pixiv / live LLM 测试保持 opt-in。
 - 不在文档、代码、fixture、终端输出中写入完整 secret。
+- Pixiv 登录态刷新 live 验证需要用户在 Tauri Pixiv 登录窗口手动登录；自动化测试只验证
+  WebView cookie store 读取能力和非敏感日志输出。
 
 ## 失败处理
 
