@@ -8,9 +8,9 @@
 | --- | --- |
 | 当前项目进度 | `docs/progress.md` |
 | 如何快速恢复上下文 | `docs/CONTEXT_HANDOFF.md` |
-| macOS 桌面端交付状态 | `tauri-app/docs/progress.md` |
-| macOS 桌面端测试标准 | `tauri-app/docs/testing.md` |
-| macOS `.dmg` 分发说明 | `tauri-app/docs/distribution.md` |
+| 桌面端交付状态（v1.2.0 Windows 当前锚点 + macOS 历史锚点） | `tauri-app/docs/progress.md` |
+| 桌面端测试标准 | `tauri-app/docs/testing.md` |
+| 桌面安装包分发说明（Windows `.exe` / macOS `.dmg`） | `tauri-app/docs/distribution.md` |
 | 原始 PRD | `docs/product_requirements.md` |
 | spec-coding 文档索引 | `docs/specs/README.md` |
 | 需求到代码/测试的追踪 | `docs/specs/traceability.md` |
@@ -70,6 +70,9 @@
 | 真实单作品下载入口 | `src/backend/src/bin/live_single.rs` |
 | 后端 server 入口 | `src/backend/src/bin/server.rs` |
 | 前端 Next.js scaffold | `src/frontend` |
+| Tauri 桌面壳源码 | `tauri-app/src-tauri` |
+| Windows 本地 Web 启动脚本 | `tools/dev_backend_windows.ps1`, `tools/dev_frontend_windows.ps1` |
+| Windows Tauri 前端导出脚本 | `tauri-app/scripts/build-frontend-windows.cmd` |
 
 ## 测试地图
 
@@ -101,6 +104,7 @@
 | 文件布局 | `{download_root}/originals/{pixiv_id}/{pixiv_id}_p{page}.{ext}` |
 | Secret 处理 | 本地存储，对外 public 读取必须 mask |
 | Live 测试 | 手动 opt-in，凭证运行时提供 |
-| 当前阶段 | v1.1.1 Mature First Delivery：GitHub 已 release，用户确认为成熟交付第一版本 |
-| 当前手动验证 | 前端单作品、Author Batch、Bookmarks Batch、Smart Retrieval、Home Dashboard、Tauri 桌面端、Pixiv Login/Refresh 均已手动确认 |
-| 后续策略 | 以 v1.1.1 为成熟交付基线；Top10/Random、缩略图缓存、任务 cancel/retry、正式签名/公证等归入交付后可选演进 |
+| 当前阶段 | v1.2.0 Windows Desktop Release：Windows NSIS 是当前默认构建目标，macOS 源码分支保留 |
+| 当前手动验证 | 前端单作品、Author Batch、Bookmarks Batch、Smart Retrieval、Home Dashboard、macOS Tauri、Pixiv Login/Refresh、Windows Web、Windows Tauri App 均已手动确认 |
+| 桌面源码关系 | Windows `.exe` / NSIS 和 macOS `.app` / `.dmg` 共用 `src/frontend`、`src/backend`、`tauri-app/src-tauri`，安装包是平台构建产物 |
+| 后续策略 | 以 v1.2.0 作为 Windows 桌面发布锚点；Top10/Random、缩略图缓存、任务 cancel/retry、双平台 build config 拆分、正式签名/公证等归入后续演进 |

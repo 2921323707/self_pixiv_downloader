@@ -89,14 +89,18 @@ fn temp_path_for(final_path: &Path) -> PathBuf {
 #[cfg(test)]
 mod tests {
     use super::StoragePlanner;
+    use std::path::PathBuf;
 
     #[test]
     fn req_dl_006_plans_grouped_original_path() {
         let planner = StoragePlanner::new("/tmp/pixiv_downloads");
         let path = planner.original_path("123456", 2, Some("jpg")).unwrap();
         assert_eq!(
-            path.to_string_lossy(),
-            "/tmp/pixiv_downloads/originals/123456/123456_p2.jpg"
+            path,
+            PathBuf::from("/tmp/pixiv_downloads")
+                .join("originals")
+                .join("123456")
+                .join("123456_p2.jpg")
         );
     }
 

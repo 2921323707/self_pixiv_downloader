@@ -4,13 +4,19 @@ Last updated: 2026-05-27
 
 ## Current Anchor
 
-The project is anchored on a downloader-first implementation path plus a mature macOS desktop delivery baseline.
+The project is anchored on a downloader-first implementation path plus a mature desktop delivery baseline.
 
-Current phase: **v1.1.1 Mature First Delivery** has been released on GitHub and accepted by the user as the first mature delivery version.
+Current phase: **v1.2.0 Windows Desktop Release**. GitHub `v1.1.1` remains the first mature macOS release anchor; `v1.2.0` is the Windows desktop release anchor for the current checkout.
 
 The core Pixiv single-work download path is proven with mock tests, one live Pixiv smoke test, DB-aware local indexing, task-state persistence, deterministic stage/integration test scripts, a thin Axum API wrapper, an in-process Tokio background queue/worker, a Next.js frontend workbench, gallery/settings/task-list data APIs, settings-backed Pixiv cookie/download-root resolution for frontend-initiated downloads, secure local image file serving for Gallery previews, Gallery hard-delete file/index cleanup, author batch download, bookmark batch download, DeepSeek-backed smart prompt parsing, smart tag-search batch download, a Home dashboard backed by real task/image/settings APIs, and UI polish across Home/Download/Tasks/Gallery/Settings. This is now accepted as the v1.0.0 downloader-first final shape.
 
-Desktop delivery anchor on 2026-05-27: GitHub `v1.1.1` is released. The Tauri macOS desktop app now includes random backend port injection, startup health checks, visible startup diagnostics, desktop logging, shared Web/App default data paths, Gallery preview stability, built-in Pixiv `PHPSESSID` refresh, and explicit macOS ad-hoc signing for the app bundle. The package is still not Apple Developer ID signed or notarized.
+Desktop delivery anchor on 2026-05-27: GitHub `v1.1.1` is released. The Tauri macOS desktop app includes random backend port injection, startup health checks, visible startup diagnostics, desktop logging, shared Web/App default data paths, Gallery preview stability, built-in Pixiv `PHPSESSID` refresh, and explicit macOS ad-hoc signing for the app bundle. The package is still not Apple Developer ID signed or notarized.
+
+Windows release anchor on 2026-05-27: local Windows Web and Tauri App have been manually validated by the user. Frontend startup failure was traced to missing `node_modules`, PowerShell `npm.ps1` execution policy, npm cache permissions, Rust `RUSTUP_HOME`/`CARGO_HOME` resolution, and missing MSVC `link.exe`. Visual Studio 2022 Build Tools / MSVC C++ tools were installed, backend Windows path handling was fixed, Windows absolute download paths were accepted, the Windows folder picker was added, `cargo test` passed with 86 tests, frontend typecheck/build passed, Web health/home HTTP checks passed, and `cd tauri-app && npm.cmd run build` produced `tauri-app/src-tauri/target/release/bundle/nsis/Pixiv Platform_1.2.0_x64-setup.exe`.
+
+Pixiv Refresh Windows anchor on 2026-05-27: the Settings -> Pixiv connection -> Refresh path was manually validated in the Windows Tauri app. Root cause of the previous no-window behavior was the frontend relying on a fragile `window.__TAURI_INTERNALS__?.invoke` check; the fix now resolves multiple Tauri invoke bridge shapes, shows Settings UI errors when the desktop bridge or command fails, and logs non-secret command/window status to `%LOCALAPPDATA%\Pixiv Platform\desktop.log`.
+
+Platform packaging source anchor: Windows `.exe`/NSIS and macOS `.app`/`.dmg` share the same `src/frontend`, `src/backend`, and `tauri-app/src-tauri` source tree. Platform differences are handled by Tauri build configuration and small `cfg(target_os)` branches for folder picker/log paths. Current `tauri.conf.json` defaults to Windows NSIS; macOS source compatibility remains, but macOS `.dmg` building requires switching the Tauri build command/targets back to macOS settings or using a macOS-specific config.
 
 Manual browser anchor on 2026-05-22: Settings-saved Pixiv credential plus a single Pixiv ID submitted from the frontend successfully downloaded a work, completed the task flow, and wrote the file locally. User also manually validated Author Batch and Bookmarks Batch through the frontend.
 
@@ -29,6 +35,16 @@ Release verification anchor on 2026-05-27: after the API module split, `./tests/
 Release anchor on 2026-05-23: the project is frozen as **v1.0.0 Final Delivery**. The release scope is the stable local downloader/indexer/workbench loop, not every future product idea. Thumbnail cache, Top10/Random discovery modes, cancel/retry, richer edit/map APIs, and semantic search are optional post-delivery evolution tracks rather than v1.0.0 blockers.
 
 Desktop stability anchor on 2026-05-26: fixed an intermittent Tauri Gallery preview blank-image issue. Root cause was Gallery list previews loading full original files concurrently through the secure file endpoint inside the macOS WebView; detail view stayed reliable because it only requested one image. The frontend now staggers Gallery preview image loading, uses lazy/async image decode, and retries failed preview image loads with a cache-busting query. The backend image file endpoint now returns `Content-Length`, with API test coverage, so WebView local image responses are more deterministic.
+
+## Platform Build Status
+
+| Platform | Current status | Default local command | Artifact | Notes |
+| --- | --- | --- | --- | --- |
+| Web on Windows | Manual OK | `tools/dev_backend_windows.ps1` + `tools/dev_frontend_windows.ps1` | n/a | Uses Axum on `127.0.0.1:3000` and Next on `127.0.0.1:3001`. |
+| Tauri Windows | Manual OK | `cd tauri-app && npm.cmd run build` | `tauri-app/src-tauri/target/release/bundle/nsis/Pixiv Platform_1.2.0_x64-setup.exe` | Current checkout defaults to NSIS. |
+| Tauri macOS | Historical v1.1.1 OK | macOS build settings required | `tauri-app/src-tauri/target/release/bundle/dmg/Pixiv Platform_1.1.0_aarch64.dmg` | Source branch remains, but default config is currently Windows-oriented. |
+
+Important: desktop installers are generated artifacts under `tauri-app/src-tauri/target/`; they are not separate source trees and are not meant to be committed. The shared application source remains `src/frontend`, `src/backend`, and `tauri-app/src-tauri`.
 
 ## Current Reality Check
 
@@ -199,7 +215,7 @@ Current result:
 86 backend unit tests passed; Phase 2A checks passed; Phase 2C checks passed; backend SQLite integration checks passed; backend API smoke checks passed; Phase 3B queue checks passed; Phase 4B data API checks passed; Phase 4C configured download checks passed; Phase 4D gallery file API checks passed; Phase 4E gallery delete checks passed; Phase 5A author batch checks passed; Phase 5B bookmark batch checks passed; Phase 6A smart parse checks passed; Phase 6B smart download checks passed; frontend scaffold checks passed; 0 failed
 ```
 
-Latest desktop release build:
+Latest macOS desktop release build:
 
 ```text
 cd tauri-app && npm run build
@@ -208,6 +224,16 @@ hdiutil verify "tauri-app/src-tauri/target/release/bundle/dmg/Pixiv Platform_1.1
 ```
 
 Current result: `.app` valid on disk and satisfies its Designated Requirement; `.dmg` checksum is valid. Artifact path: `tauri-app/src-tauri/target/release/bundle/dmg/Pixiv Platform_1.1.0_aarch64.dmg`.
+
+Latest Windows desktop build:
+
+```text
+cd src/backend && cargo test
+cd src/frontend && npm.cmd run lint
+cd tauri-app && npm.cmd run build
+```
+
+Current result: backend `cargo test` passed with 86 tests; frontend `tsc --noEmit` passed; Web health/home checks passed; Windows Pixiv Refresh was manually validated; NSIS artifact path is `tauri-app/src-tauri/target/release/bundle/nsis/Pixiv Platform_1.2.0_x64-setup.exe`.
 
 Latest focused frontend gate:
 

@@ -2,16 +2,16 @@
 
 ## 当前阶段
 
-阶段：`v1.1.1` 成熟交付第一版已 release；Desktop MVP、P3a `.dmg` 最小分发闭环、Pixiv 登录态刷新和 macOS ad-hoc signing 均已完成。
+阶段：`v1.1.1` 成熟 macOS 交付锚点已 release；当前 Windows 桌面发布锚点为 `v1.2.0`。Desktop MVP、P3a `.dmg` 最小分发闭环、Pixiv 登录态刷新、macOS ad-hoc signing、Windows NSIS 适配和 Windows Pixiv Refresh 修复均已完成。
 
-目标是在 macOS 上跑通一个可开发验证的 Tauri 桌面壳。该壳引用现有
+目标是在桌面平台跑通一个可开发验证的 Tauri 桌面壳。该壳引用现有
 `src/frontend` 前端与 `src/backend` Rust 后端，不复制业务代码。
 
 ## 范围
 
 - 新建并维护 `tauri-app` 作为桌面应用项目源码目录。
 - Tauri 开发模式加载现有 Next.js 前端。
-- Tauri 生产打包优先使用 Next 静态导出产物，由 `.app` 内嵌加载。
+- Tauri 生产打包优先使用 Next 静态导出产物，由桌面 bundle 内嵌加载。
 - Tauri 后端通过 Rust path dependency 引用现有 `src/backend`。
 - 桌面端每次启动绑定 `127.0.0.1` 随机可用端口，避免固定端口冲突。
 - Tauri 创建 WebView 时注入运行时 API base URL，前端优先使用该值访问本地 Rust API。
@@ -25,6 +25,8 @@
   未公证的 macOS `.dmg`，用于 GitHub Release 小范围分发验证。
 - 分发文档需说明：未 Developer ID 签名、未公证 `.dmg` 上传 GitHub Release 后，其他 macOS 用户可能遇到
   Gatekeeper 拦截；但运行已打包应用不需要安装 Rust、Cargo、Node、npm 或 TypeScript。
+- Windows 当前本地目标是 NSIS `.exe` 安装包；用户已手动确认 Windows Web 和 Windows Tauri App 正常。
+- Windows `.exe` / NSIS 和 macOS `.app` / `.dmg` 共用 `src/frontend`、`src/backend`、`tauri-app/src-tauri`，不得拆成两套业务源码。
 - Settings 中 Pixiv 连接应支持桌面端内置 Pixiv 登录窗口刷新 `PHPSESSID`，降低用户手动从浏览器
   开发者工具复制 cookie 的成本。
 - Pixiv 登录态刷新必须在 Pixiv 官方页面完成登录，不采集、不保存、不代理用户 Pixiv 密码。
@@ -34,7 +36,6 @@
 
 ## 非目标
 
-- 不做 Windows 桌面端。
 - 不做手机端。
 - 不做 Apple Developer ID 签名、Apple notarization、公证或自动更新；允许 Tauri bundle 使用 ad-hoc signing 修复 bundle 完整性。
 - 不迁移到 macOS Application Support 数据目录；用户已确认共享默认目录使用

@@ -126,6 +126,24 @@ fn handle_menu_event(app: &tauri::AppHandle, event: tauri::menu::MenuEvent) {
 
 #[tauri::command]
 fn select_download_directory() -> Result<Option<String>, String> {
+    #[cfg(target_os = "macos")]
+    {
+        select_download_directory_macos()
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        select_download_directory_windows()
+    }
+
+    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+    {
+        Err("folder picker is not supported on this platform yet".to_owned())
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn select_download_directory_macos() -> Result<Option<String>, String> {
     let output = Command::new("/usr/bin/osascript")
         .arg("-e")
         .arg(
@@ -151,6 +169,38 @@ fn select_download_directory() -> Result<Option<String>, String> {
     }
 }
 
+#[cfg(target_os = "windows")]
+fn select_download_directory_windows() -> Result<Option<String>, String> {
+    let script = r#"
+Add-Type -AssemblyName System.Windows.Forms
+$dialog = New-Object System.Windows.Forms.FolderBrowserDialog
+$dialog.Description = 'Choose a Pixiv Platform download folder'
+$dialog.ShowNewFolderButton = $true
+if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
+    Write-Output $dialog.SelectedPath
+}
+"#;
+    let output = Command::new("powershell.exe")
+        .arg("-NoProfile")
+        .arg("-STA")
+        .arg("-Command")
+        .arg(script)
+        .output()
+        .map_err(|error| format!("folder picker could not be opened: {error}"))?;
+
+    if output.status.success() {
+        let path = String::from_utf8_lossy(&output.stdout).trim().to_owned();
+        if path.is_empty() {
+            Ok(None)
+        } else {
+            Ok(Some(path))
+        }
+    } else {
+        let error = String::from_utf8_lossy(&output.stderr);
+        Err(format!("folder picker failed: {}", error.trim()))
+    }
+}
+
 #[derive(Serialize)]
 struct PixivSessionCookie {
     value: String,
@@ -165,8 +215,9 @@ async fn refresh_pixiv_phpsessid(
     app: tauri::AppHandle,
     logger: tauri::State<'_, DesktopLogger>,
 ) -> Result<PixivSessionCookie, String> {
-    let login_window = open_or_focus_pixiv_login_window(&app)?;
     let logger = logger.inner().clone();
+    logger.log("pixiv login refresh command invoked");
+    let login_window = open_or_focus_pixiv_login_window(&app, &logger)?;
 
     tauri::async_runtime::spawn_blocking(move || {
         let deadline = Instant::now() + Duration::from_secs(180);
@@ -208,13 +259,18 @@ async fn refresh_pixiv_phpsessid(
 
 fn open_or_focus_pixiv_login_window(
     app: &tauri::AppHandle,
+    logger: &DesktopLogger,
 ) -> Result<tauri::WebviewWindow, String> {
     if let Some(window) = app.get_webview_window(PIXIV_LOGIN_WINDOW) {
+        logger.log("pixiv login window already exists; focusing it");
         window.show().map_err(|error| error.to_string())?;
         window.set_focus().map_err(|error| error.to_string())?;
         return Ok(window);
     }
 
+    logger.log(&format!(
+        "pixiv login window opening external URL {PIXIV_LOGIN_URL}"
+    ));
     let url = Url::parse(PIXIV_LOGIN_URL).map_err(|error| error.to_string())?;
     WebviewWindowBuilder::new(app, PIXIV_LOGIN_WINDOW, WebviewUrl::External(url))
         .title("Pixiv Login")
@@ -222,7 +278,12 @@ fn open_or_focus_pixiv_login_window(
         .min_inner_size(720.0, 560.0)
         .resizable(true)
         .build()
-        .map_err(|error| error.to_string())
+        .inspect(|_| logger.log("pixiv login window created"))
+        .map_err(|error| {
+            let message = format!("pixiv login window could not be created: {error}");
+            logger.log(&message);
+            message
+        })
 }
 
 fn is_pixiv_phpsessid(cookie: &Cookie<'_>) -> bool {
@@ -304,7 +365,7 @@ fn desktop_app_state(logger: &DesktopLogger) -> AppState {
 }
 
 fn default_download_root() -> PathBuf {
-    std::env::var_os("HOME")
+    home_dir()
         .map(PathBuf::from)
         .map(|home| home.join("Downloads/Pixiv Platform"))
         .unwrap_or_else(|| PathBuf::from("Pixiv Platform"))
@@ -481,7 +542,29 @@ impl DesktopLogger {
 }
 
 fn desktop_log_path() -> Option<PathBuf> {
-    std::env::var_os("HOME")
-        .map(PathBuf::from)
-        .map(|home| home.join("Library/Logs/Pixiv Platform/desktop.log"))
+    #[cfg(target_os = "macos")]
+    {
+        home_dir()
+            .map(PathBuf::from)
+            .map(|home| home.join("Library/Logs/Pixiv Platform/desktop.log"))
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        std::env::var_os("LOCALAPPDATA")
+            .map(PathBuf::from)
+            .or_else(|| home_dir().map(PathBuf::from))
+            .map(|base| base.join("Pixiv Platform").join("desktop.log"))
+    }
+
+    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+    {
+        home_dir()
+            .map(PathBuf::from)
+            .map(|home| home.join(".local/share/Pixiv Platform/desktop.log"))
+    }
+}
+
+fn home_dir() -> Option<std::ffi::OsString> {
+    std::env::var_os("HOME").or_else(|| std::env::var_os("USERPROFILE"))
 }

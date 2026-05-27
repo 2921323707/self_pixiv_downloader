@@ -7,6 +7,7 @@ Current state:
 - Backend core scaffold exists at `src/backend`.
 - Frontend scaffold exists and Home / Download / Gallery / Settings / Tasks now use real data APIs plus Phase 7B UI polish/follow-up anchors; this forms the v1.0.0 downloader-first final test surface.
 - Runnable backend unit, stage, deterministic integration, API smoke, Phase 3B queue, Phase 4B data API, Phase 4C configured download, Phase 4D gallery file API, Phase 4E gallery delete, Phase 5A author batch, Phase 5B bookmark batch, Phase 6A smart parse, Phase 6B smart download, and frontend scaffold checks are available. The frontend scaffold check also asserts Phase 7B Home banner selection, Home Rust/performance panels, Download tabs/tag chips/API unwrap guard, Gallery drawer close hooks, Tasks modal/recent-list close hooks, and Settings category anchors.
+- Windows Web and Tauri App were manually validated on 2026-05-27. Windows local commands use `npm.cmd` and the helper scripts under `tools/`.
 
 Run deterministic local tests:
 
@@ -117,7 +118,20 @@ Current local baseline:
 
 ```text
 ./tests/run_local.sh
-82 backend unit tests passed; Phase 2A checks passed; Phase 2C checks passed; backend SQLite integration checks passed; backend API smoke checks passed; Phase 3B queue checks passed; Phase 4B data API checks passed; Phase 4C configured download checks passed; Phase 4D gallery file API checks passed; Phase 4E gallery delete checks passed; Phase 5A author batch checks passed; Phase 5B bookmark batch checks passed; Phase 6A smart parse checks passed; Phase 6B smart download checks passed; frontend scaffold checks passed; 0 failed
+86 backend unit tests passed; Phase 2A checks passed; Phase 2C checks passed; backend SQLite integration checks passed; backend API smoke checks passed; Phase 3B queue checks passed; Phase 4B data API checks passed; Phase 4C configured download checks passed; Phase 4D gallery file API checks passed; Phase 4E gallery delete checks passed; Phase 5A author batch checks passed; Phase 5B bookmark batch checks passed; Phase 6A smart parse checks passed; Phase 6B smart download checks passed; frontend scaffold checks passed; 0 failed
+```
+
+Latest Windows focused baseline:
+
+```text
+cd src/backend && cargo test
+86 backend tests passed
+
+cd src/frontend && npm.cmd run lint
+TypeScript check passed
+
+cd tauri-app && npm.cmd run build
+NSIS installer built at tauri-app/src-tauri/target/release/bundle/nsis/Pixiv Platform_1.2.0_x64-setup.exe
 ```
 
 Latest focused frontend check:
