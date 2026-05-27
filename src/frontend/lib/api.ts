@@ -157,7 +157,45 @@ declare global {
     __TAURI_INTERNALS__?: {
       invoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T>;
     };
+    __TAURI__?: {
+      invoke?<T>(cmd: string, args?: Record<string, unknown>): Promise<T>;
+      core?: {
+        invoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T>;
+      };
+      tauri?: {
+        invoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T>;
+      };
+    };
   }
+}
+
+export type TauriInvoke = <T>(
+  cmd: string,
+  args?: Record<string, unknown>,
+) => Promise<T>;
+
+export function getTauriInvoke(): TauriInvoke | null {
+  if (typeof window === "undefined") return null;
+
+  const candidates: Array<[unknown, unknown]> = [
+    [window.__TAURI_INTERNALS__, window.__TAURI_INTERNALS__?.invoke],
+    [window.__TAURI__?.core, window.__TAURI__?.core?.invoke],
+    [window.__TAURI__?.tauri, window.__TAURI__?.tauri?.invoke],
+    [window.__TAURI__, window.__TAURI__?.invoke]
+  ];
+
+  for (const [owner, invoke] of candidates) {
+    if (typeof invoke === "function") {
+      return invoke.bind(owner) as TauriInvoke;
+    }
+  }
+
+  return null;
+}
+
+export function isTauriDesktopRuntime(): boolean {
+  if (typeof window === "undefined") return false;
+  return Boolean(getTauriInvoke() || window.__PIXIV_PLATFORM_BACKEND_URL__);
 }
 
 export function apiUrl(path: string): string {

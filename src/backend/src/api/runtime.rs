@@ -162,9 +162,13 @@ pub(crate) fn expand_download_root(value: &str) -> Result<PathBuf, AppError> {
 }
 
 fn home_dir() -> Result<String, AppError> {
-    env::var("HOME").map_err(|_| {
-        AppError::validation("HOME is required to expand download_base_path starting with ~")
-    })
+    env::var("HOME")
+        .or_else(|_| env::var("USERPROFILE"))
+        .map_err(|_| {
+            AppError::validation(
+                "HOME or USERPROFILE is required to expand download_base_path starting with ~",
+            )
+        })
 }
 
 pub(crate) fn setting_string(raw_json: &str, key: &str) -> Result<String, AppError> {
@@ -198,6 +202,7 @@ pub(crate) fn setting_r18_policy_or(
 
 pub(crate) fn default_download_root() -> PathBuf {
     env::var_os("HOME")
+        .or_else(|| env::var_os("USERPROFILE"))
         .map(PathBuf::from)
         .map(|home| home.join("Downloads/Pixiv Platform"))
         .unwrap_or_else(|| PathBuf::from("Pixiv Platform"))

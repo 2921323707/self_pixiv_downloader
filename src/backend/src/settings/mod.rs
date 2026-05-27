@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use rusqlite::{Connection, OptionalExtension, params};
 use serde_json::Value;
 
@@ -269,7 +271,7 @@ fn validate_download_base_path(value: &Value) -> Result<(), AppError> {
             "download_base_path cannot contain NUL bytes",
         ));
     }
-    if !(path.starts_with('/') || path == "~" || path.starts_with("~/")) {
+    if !(PathBuf::from(path).is_absolute() || path == "~" || path.starts_with("~/")) {
         return Err(AppError::validation(
             "download_base_path must be absolute or start with ~",
         ));

@@ -2,14 +2,16 @@
 
 ## 当前目标
 
-`v1.1.1` 已作为成熟交付第一版本 release。当前测试标准不再追踪每一次重复 build 流水，而是保留：
+`v1.1.1` 已作为成熟 macOS 交付锚点 release，`v1.2.0` 是当前 Windows 桌面发布锚点。当前测试标准不再追踪每一次重复 build 流水，而是保留：
 
 - 交付验收标准。
 - 最小命令行质量门。
 - 对后续 debug 有价值的失败根因和排查入口。
 - live 测试的安全边界。
 
-最新验证锚点：2026-05-27 在 API 模块拆分后重新运行 `./tests/unit/backend_unit.sh`、`./tests/run_local.sh`、`cd tauri-app && npm run build`、`codesign --verify --deep --strict`、`hdiutil verify` 均通过。Live Pixiv E2E 未运行，因为当前 shell 未设置 `PIXIV_PHPSESSID`。
+最新 macOS 验证锚点：2026-05-27 在 API 模块拆分后重新运行 `./tests/unit/backend_unit.sh`、`./tests/run_local.sh`、`cd tauri-app && npm run build`、`codesign --verify --deep --strict`、`hdiutil verify` 均通过。Live Pixiv E2E 未运行，因为当前 shell 未设置 `PIXIV_PHPSESSID`。
+
+最新 Windows 验证锚点：2026-05-27 用户手动确认 Web 正常、Windows Tauri App 正常、Pixiv Refresh 弹窗正常；`cd src/backend && cargo test` 通过 86 个后端测试，`cd src/frontend && npm.cmd run lint` 通过，`cd tauri-app && npm.cmd run build` 生成 NSIS 安装包。
 
 ## 分层验证
 
@@ -21,22 +23,22 @@
 4. 静态导出检查：`cd src/frontend && NEXT_OUTPUT_EXPORT=1 npm run build`。
 5. 后端检查：`cd src/backend && cargo check`，必要时运行相关 `cargo test`。
 6. Tauri 检查：`cd tauri-app/src-tauri && cargo check`。
-7. Tauri release build：`cd tauri-app && npm run build`。
-8. macOS bundle 验证：`codesign`、`hdiutil verify`、挂载结构检查。
-9. 用户手动验证：打开 `.app` 或 `.dmg` 安装后确认核心页面与下载流程。
+7. Tauri release build：Windows 当前默认 `cd tauri-app && npm.cmd run build`；macOS 需要 macOS build settings。
+8. 平台 bundle 验证：Windows 检查 NSIS installer 产物；macOS 检查 `codesign`、`hdiutil verify`、挂载结构。
+9. 用户手动验证：打开 `.exe` installer、`.app` 或 `.dmg` 安装后确认核心页面与下载流程。
 
 ## 交付验收点
 
 桌面端：
 
-- `.app` 双击后无需手动启动 Next dev server 或 Rust server。
+- 桌面 App 启动后无需手动启动 Next dev server 或 Rust server。
 - Tauri 进程内 Axum 后端监听 `127.0.0.1:<random-port>`。
 - 主窗口创建前 `GET /api/health` 返回 `200 OK`。
 - Home / Download / Gallery / Tasks / Settings 可访问。
 - 前端通过 Tauri 注入的运行时 API base URL 访问后端，不写死 `127.0.0.1:3000`。
-- 退出 `.app` 后不残留独立后端进程。
+- 退出桌面 App 后不残留独立后端进程。
 - 后端启动或健康检查失败时，桌面窗口显示错误原因和日志路径。
-- 日志写入 `~/Library/Logs/Pixiv Platform/desktop.log`。
+- 日志写入平台日志路径：macOS `~/Library/Logs/Pixiv Platform/desktop.log`；Windows `%LOCALAPPDATA%\Pixiv Platform\desktop.log`。
 
 数据与设置：
 
@@ -60,6 +62,12 @@ macOS 分发：
 - `.app` 通过 `codesign --verify --deep --strict`。
 - 当前包是 ad-hoc signed、未 Developer ID 签名、未公证；Gatekeeper 仍可能要求用户手动允许。
 
+Windows 分发：
+
+- NSIS installer 可产出。
+- 当前产物路径为 `tauri-app/src-tauri/target/release/bundle/nsis/Pixiv Platform_1.2.0_x64-setup.exe`。
+- 用户手动安装/运行后确认核心 Web/App 功能正常。
+
 ## 当前验证命令
 
 ```text
@@ -72,6 +80,14 @@ cd tauri-app/src-tauri && cargo check
 cd tauri-app && npm run build
 codesign --verify --deep --strict --verbose=2 "tauri-app/src-tauri/target/release/bundle/macos/Pixiv Platform.app"
 hdiutil verify "tauri-app/src-tauri/target/release/bundle/dmg/Pixiv Platform_1.1.0_aarch64.dmg"
+```
+
+当前 Windows 验证命令：
+
+```text
+cd src/backend && cargo test
+cd src/frontend && npm.cmd run lint
+cd tauri-app && npm.cmd run build
 ```
 
 挂载验证：
@@ -116,4 +132,4 @@ PIXIV_PHPSESSID=... ./tests/e2e/live_single_download.sh
 
 - 依赖下载失败时，先判断是否是网络或沙箱限制。
 - 需要联网安装依赖时，必须请求用户批准。
-- Tauri 启动失败时，先检查 `~/Library/Logs/Pixiv Platform/desktop.log`、`GET /api/health`、本地端口、SQLite 路径和 codesign 状态。
+- Tauri 启动失败时，先检查平台日志路径、`GET /api/health`、本地端口、SQLite 路径；macOS 再检查 codesign 状态。

@@ -4,6 +4,8 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { EyeOff, Folder, FolderOpen, KeyRound, Loader2, Palette, Save, Shield, Wifi } from "lucide-react";
 import {
   fetchSettings,
+  getTauriInvoke,
+  isTauriDesktopRuntime,
   PublicSetting,
   saveSetting,
   testDeepSeekConnection,
@@ -89,9 +91,9 @@ export default function SettingsPage() {
   const [testingDeepSeek, setTestingDeepSeek] = useState(false);
   const [selectingDownloadDirectory, setSelectingDownloadDirectory] = useState(false);
   const [refreshingPixivLogin, setRefreshingPixivLogin] = useState(false);
+  const [tauriDesktopReady, setTauriDesktopReady] = useState(false);
   const [pixivTestResult, setPixivTestResult] = useState<string | null>(null);
   const [deepseekTestResult, setDeepseekTestResult] = useState<string | null>(null);
-  const isTauriDesktop = typeof window !== "undefined" && Boolean(window.__TAURI_INTERNALS__?.invoke);
 
   async function load() {
     setLoading(true);
@@ -116,6 +118,16 @@ export default function SettingsPage() {
 
   useEffect(() => {
     load();
+  }, []);
+
+  useEffect(() => {
+    setTauriDesktopReady(isTauriDesktopRuntime());
+
+    const timeout = window.setTimeout(() => {
+      setTauriDesktopReady(isTauriDesktopRuntime());
+    }, 500);
+
+    return () => window.clearTimeout(timeout);
   }, []);
 
   const settingsByKey = useMemo(
@@ -164,7 +176,7 @@ export default function SettingsPage() {
   }
 
   async function chooseDownloadDirectory(setting: PublicSetting) {
-    const invoke = window.__TAURI_INTERNALS__?.invoke;
+    const invoke = getTauriInvoke();
     if (!invoke) {
       setError("Folder picker is only available in the Tauri desktop app.");
       return;
@@ -191,9 +203,11 @@ export default function SettingsPage() {
   }
 
   async function refreshPixivLogin(setting: PublicSetting) {
-    const invoke = window.__TAURI_INTERNALS__?.invoke;
+    const invoke = getTauriInvoke();
     if (!invoke) {
-      setError("Pixiv login refresh is only available in the Tauri desktop app.");
+      setError(
+        "Pixiv login refresh could not reach the Tauri desktop bridge. Restart the desktop app and try again."
+      );
       return;
     }
 
@@ -223,7 +237,8 @@ export default function SettingsPage() {
       );
       window.alert("Pixiv login refreshed successfully. The login window has been closed.");
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Pixiv login refresh failed");
+      const message = caught instanceof Error ? caught.message : String(caught);
+      setError(`Pixiv login refresh failed: ${message}`);
     } finally {
       setRefreshingPixivLogin(false);
       setSavingKey(null);
@@ -394,7 +409,7 @@ export default function SettingsPage() {
                     {setting.key === "theme_id" && isSaving ? (
                       <Loader2 className="spin" size={16} aria-hidden="true" />
                     ) : null}
-                    {isPixivCookie && isTauriDesktop ? (
+                    {isPixivCookie && tauriDesktopReady ? (
                       <button
                         className="button secondary"
                         disabled={refreshingPixivLogin || testingPixiv || isSaving}

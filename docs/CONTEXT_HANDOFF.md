@@ -4,15 +4,19 @@
 
 ## 一句话项目状态
 
-这是一个本地优先的 Pixiv AI 下载与智能检索平台。当前采用 downloader-first 路线，已跑通真实 Pixiv 单作品下载，并已完成 SQLite migration、图片仓储、settings 仓储、DB-aware downloader、任务状态持久化、确定性测试脚本结构、薄 Axum API wrapper、in-process Tokio 后台任务队列、Next.js 前端工作台、Gallery/Settings/Tasks/Home 真实数据接线、作者批量下载、收藏批量下载、DeepSeek 智能解析、smart 标签搜索批量下载、UI polish、Tauri macOS 桌面壳、Web/App 默认共享下载目录、Gallery 预览稳定性修复、Pixiv 内置登录刷新 `PHPSESSID`、以及 macOS ad-hoc signed `.app` / `.dmg` 分发验证。GitHub `v1.1.1` 已 release，用户确认它可作为成熟交付第一版本。
+这是一个本地优先的 Pixiv AI 下载与智能检索平台。当前采用 downloader-first 路线，已跑通真实 Pixiv 单作品下载，并已完成 SQLite migration、图片仓储、settings 仓储、DB-aware downloader、任务状态持久化、确定性测试脚本结构、薄 Axum API wrapper、in-process Tokio 后台任务队列、Next.js 前端工作台、Gallery/Settings/Tasks/Home 真实数据接线、作者批量下载、收藏批量下载、DeepSeek 智能解析、smart 标签搜索批量下载、UI polish、Tauri 桌面壳、Web/App 默认共享下载目录、Gallery 预览稳定性修复、Pixiv 内置登录刷新 `PHPSESSID`、macOS ad-hoc signed `.app` / `.dmg` 分发验证，以及 Windows Web / Tauri NSIS 安装包适配。GitHub `v1.1.1` 是成熟 macOS 交付锚点；当前本地 checkout 已提升到 `v1.2.0` Windows 桌面发布锚点。
 
 ## 当前阶段
 
-当前阶段：**v1.1.1 Mature First Delivery** 已 release。后续以缺陷修复、安装体验、小范围分发反馈和可选功能演进为主。
+当前阶段：**v1.2.0 Windows Desktop Release**。后续以缺陷修复、安装体验、小范围分发反馈和可选功能演进为主。
 
 关键锚点：2026-05-22 用户确认前端单作品、Author Batch、Bookmarks Batch 可用。2026-05-23 Smart Retrieval、Home Dashboard、Phase 7B UI polish 完成。2026-05-26 修复 Tauri Gallery 偶发预览空白，原因是 macOS WebView 内并发加载多张原图；修复为错峰/lazy/async decode/失败重试，并给图片文件响应补 `Content-Length`。2026-05-26 至 2026-05-27 完成 Pixiv 内置登录刷新 `PHPSESSID`、`.dmg` 损坏提示复查、macOS ad-hoc signing、codesign 和 hdiutil 验证。当前策略：以 `v1.1.1` 为成熟交付基线，文档采用“顶部锚点覆写 + 关键 debug 信息保留 + 阶段结束压缩”。
 
 最新维护锚点：2026-05-27 已完成 `src/backend/src/api.rs` 拆分，现为 `src/backend/src/api/` 模块树；外部 `api::{AppState, router, serve, serve_listener}` 入口保持兼容。同日重新运行 `./tests/unit/backend_unit.sh`、`./tests/run_local.sh`、`cd tauri-app && npm run build`、`codesign --verify --deep --strict` 和 `hdiutil verify` 均通过。Live Pixiv E2E 因当前 shell 未提供 `PIXIV_PHPSESSID` 未运行，仍保持 opt-in。
+
+Windows 发布锚点：2026-05-27 在 Windows 本地确认 Web 和 Tauri App 正常。已安装 Visual Studio 2022 Build Tools / MSVC C++ linker；后端修复 Windows 绝对路径和 `USERPROFILE` home fallback；Settings Pixiv Refresh 已修复 Tauri invoke bridge 判断并经用户手动确认可弹出 Pixiv 登录窗口；`cargo test` 86 tests passed；前端 `npm.cmd run lint` passed；Web 联通验证 `/api/health` ok 且首页 HTTP 200；`cd tauri-app && npm.cmd run build` 生成 `tauri-app/src-tauri/target/release/bundle/nsis/Pixiv Platform_1.2.0_x64-setup.exe`。当前 `tauri.conf.json` 默认构建目标为 Windows NSIS。
+
+macOS 兼容边界：`tauri-app/src-tauri/src/main.rs` 中 macOS 文件夹选择、日志路径、Pixiv 登录窗口等源码分支仍保留；`.exe` 和 `.dmg` 不是两套源码。当前不兼容的是默认构建配置：Windows 适配把 `beforeBuildCommand` 和 `bundle.targets` 切到 Windows。要在 macOS 再构建 `.app` / `.dmg`，需要把 Tauri 构建命令/targets 切回 macOS，或新增 macOS 专用 config。
 
 ## 当前真实边界
 
@@ -118,6 +122,9 @@ v1.x / v2 候选，不属于 v1.0.0 阻塞：
 | Pixiv tag search | `src/backend/src/pixiv/mod.rs` |
 | 后端 server 入口 | `src/backend/src/bin/server.rs` |
 | 前端 scaffold | `src/frontend` |
+| Tauri 桌面壳 | `tauri-app/src-tauri` |
+| Windows Web 启动脚本 | `tools/dev_backend_windows.ps1`, `tools/dev_frontend_windows.ps1` |
+| Windows 前端静态导出脚本 | `tauri-app/scripts/build-frontend-windows.cmd` |
 
 ## 当前测试基线
 
@@ -133,7 +140,7 @@ v1.x / v2 候选，不属于 v1.0.0 阻塞：
 86 backend unit tests passed; Phase 2A checks passed; Phase 2C checks passed; backend SQLite integration checks passed; backend API smoke checks passed; Phase 3B queue checks passed; Phase 4B data API checks passed; Phase 4C configured download checks passed; Phase 4D gallery file API checks passed; Phase 4E gallery delete checks passed; Phase 5A author batch checks passed; Phase 5B bookmark batch checks passed; Phase 6A smart parse checks passed; Phase 6B smart download checks passed; frontend scaffold checks passed; 0 failed
 ```
 
-最新桌面构建验证：
+最新 macOS 桌面构建验证：
 
 ```text
 cd tauri-app && npm run build
@@ -142,6 +149,16 @@ hdiutil verify "tauri-app/src-tauri/target/release/bundle/dmg/Pixiv Platform_1.1
 ```
 
 当前产物：`tauri-app/src-tauri/target/release/bundle/dmg/Pixiv Platform_1.1.0_aarch64.dmg`，本地大小约 8.2M；`.app` ad-hoc signed 且 codesign 校验通过；`.dmg` checksum valid。
+
+最新 Windows 桌面构建验证：
+
+```text
+cd src/backend && cargo test
+cd src/frontend && npm.cmd run lint
+cd tauri-app && npm.cmd run build
+```
+
+当前产物：`tauri-app/src-tauri/target/release/bundle/nsis/Pixiv Platform_1.2.0_x64-setup.exe`。用户已手动确认 Web 正常、Windows App 正常，Pixiv Refresh 弹窗正常。
 
 真实 Pixiv E2E：
 
@@ -178,6 +195,8 @@ PIXIV_PHPSESSID=... ./tests/e2e/live_single_download.sh
 - Phase 3B 清理检查已完成：仅生成候选清单，没有删除文件
 - 2026-05-27 用户确认清理已执行：构建缓存删除，旧项目 `output/` 删除，未引用静态资源删除，主题 demo 移至 `docs/design/theme-reference/`
 - 2026-05-27 默认存储路径统一：Web/backend standalone 与 macOS App 默认共享 `~/Downloads/Pixiv Platform/`，旧 `output/` 自动迁移逻辑已删除
+- 2026-05-27 Windows v1.2.0 发布锚点完成：Web 本地启动正常，Windows Tauri App 手动验证正常，Pixiv Refresh 弹窗正常，NSIS 安装包构建成功
+- `.exe` / `.dmg` 共享同一套源码：`src/frontend`、`src/backend`、`tauri-app/src-tauri`；差异只在构建配置和少量 `cfg(target_os)` 系统能力分支
 - 默认主题已选 `cyan-studio`
 - 当前仓库保留 `docs/design/theme-reference/demo_B.html` 作为视觉参考
 - `src/backend/target/` 是构建产物，已忽略

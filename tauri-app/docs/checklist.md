@@ -16,6 +16,10 @@
 - [x] 配置加载现有 frontend dev server。
 - [x] 前端 API base URL 兼容桌面模式。
 - [x] 完成最小验证。
+- [x] Windows Web 本地启动验证通过。
+- [x] Windows Tauri App 手动验证通过。
+- [x] Windows NSIS 安装包构建通过。
+- [x] 记录 Windows `.exe` / macOS `.dmg` 共享同一套源码，不是两套应用代码。
 
 ## `.app` 打包前置清单
 
@@ -83,6 +87,8 @@
 - [x] 用户手动 live 验证 Pixiv 登录刷新成功。
 - [x] 显式启用 macOS ad-hoc signing：`bundle.macOS.signingIdentity = "-"`。
 - [x] `.app` codesign、`.dmg` checksum 和挂载结构验证通过。
+- [x] Windows v1.2.0 发布：安装 MSVC Build Tools，修复 Windows download path / home fallback，修复 Settings Pixiv Refresh 弹窗，构建 `Pixiv Platform_1.2.0_x64-setup.exe`。
+- [ ] 如需长期双平台维护，拆分 Windows/macOS Tauri build config，避免默认 `tauri.conf.json` 在平台间来回切换。
 - [ ] P3 签名、公证。
 - [ ] P3 自动更新。
 - [ ] P1 后续：如需更正式的数据分层，再评估 macOS Application Support。
