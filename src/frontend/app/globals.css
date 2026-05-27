@@ -493,6 +493,7 @@ textarea {
 }
 
 .success-box,
+.info-box,
 .error-box {
   display: grid;
   gap: 5px;
@@ -510,6 +511,11 @@ textarea {
   color: var(--accent);
   font-weight: 820;
   overflow-wrap: anywhere;
+}
+
+.info-box {
+  color: #1f5271;
+  background: rgba(37, 144, 194, 0.12);
 }
 
 .error-box {

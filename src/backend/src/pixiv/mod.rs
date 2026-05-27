@@ -210,7 +210,7 @@ pub mod http {
     }
 
     impl PixivHttpClient {
-        fn fetch_current_user_uid(&self) -> Result<String, AppError> {
+        pub fn fetch_current_user_uid(&self) -> Result<String, AppError> {
             let html = self
                 .client
                 .get("https://www.pixiv.net/")

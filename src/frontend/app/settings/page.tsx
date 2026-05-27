@@ -93,6 +93,7 @@ export default function SettingsPage() {
   const [refreshingPixivLogin, setRefreshingPixivLogin] = useState(false);
   const [tauriDesktopReady, setTauriDesktopReady] = useState(false);
   const [pixivTestResult, setPixivTestResult] = useState<string | null>(null);
+  const [pixivRefreshStatus, setPixivRefreshStatus] = useState<string | null>(null);
   const [deepseekTestResult, setDeepseekTestResult] = useState<string | null>(null);
 
   async function load() {
@@ -156,6 +157,9 @@ export default function SettingsPage() {
     setSavingKey(setting.key);
     setSavedKey(null);
     setPixivTestResult(null);
+    setPixivRefreshStatus(
+      "Pixiv login window opened. Finish signing in; the cookie will be saved after the account session is verified."
+    );
     setDeepseekTestResult(null);
     setError(null);
     try {
@@ -235,9 +239,11 @@ export default function SettingsPage() {
           ? `Pixiv login refreshed: ${result.title}`
           : `Pixiv login refreshed${cookie.domain ? ` for ${cookie.domain}` : ""}`
       );
-      window.alert("Pixiv login refreshed successfully. The login window has been closed.");
+      setPixivRefreshStatus(null);
+      window.alert("Pixiv login verified and refreshed successfully. The login window has been closed.");
     } catch (caught) {
       const message = caught instanceof Error ? caught.message : String(caught);
+      setPixivRefreshStatus(null);
       setError(`Pixiv login refresh failed: ${message}`);
     } finally {
       setRefreshingPixivLogin(false);
@@ -323,6 +329,7 @@ export default function SettingsPage() {
       </section>
 
       {error ? <div className="error-box">{error}</div> : null}
+      {pixivRefreshStatus ? <div className="info-box">{pixivRefreshStatus}</div> : null}
       {pixivTestResult ? <div className="success-box">{pixivTestResult}</div> : null}
       {deepseekTestResult ? <div className="success-box">{deepseekTestResult}</div> : null}
 

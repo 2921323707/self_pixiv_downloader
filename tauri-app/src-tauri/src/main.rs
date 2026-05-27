@@ -10,6 +10,7 @@ use std::time::SystemTime;
 use std::time::{Duration, Instant};
 
 use pixiv_platform_backend::api::{AppState, EnvPixivClientFactory, serve_listener};
+use pixiv_platform_backend::pixiv::http::PixivHttpClient;
 use serde::Serialize;
 use tauri::menu::{AboutMetadata, Menu, MenuBuilder, MenuItemBuilder, SubmenuBuilder};
 use tauri::webview::Cookie;
@@ -221,27 +222,51 @@ async fn refresh_pixiv_phpsessid(
 
     tauri::async_runtime::spawn_blocking(move || {
         let deadline = Instant::now() + Duration::from_secs(180);
+        let mut last_candidate_cookie: Option<String> = None;
+        let mut next_validation_at = Instant::now();
         while Instant::now() < deadline {
             match login_window.cookies() {
                 Ok(cookies) => {
                     if let Some(cookie) = cookies.into_iter().find(is_pixiv_phpsessid) {
-                        logger.log(&format!(
-                            "pixiv login window found PHPSESSID cookie with length {}",
-                            cookie.value().len()
-                        ));
-                        let session_cookie = PixivSessionCookie {
-                            value: cookie.value().to_owned(),
-                            domain: cookie.domain().map(str::to_owned),
-                            path: cookie.path().map(str::to_owned),
-                            http_only: cookie.http_only(),
-                            secure: cookie.secure(),
-                        };
-                        if let Err(error) = login_window.close() {
-                            logger.log(&format!(
-                                "pixiv login window could not be closed after cookie refresh: {error}"
-                            ));
+                        let cookie_value = cookie.value().to_owned();
+                        let should_validate = last_candidate_cookie.as_deref()
+                            != Some(cookie_value.as_str())
+                            || Instant::now() >= next_validation_at;
+                        if !should_validate {
+                            std::thread::sleep(Duration::from_millis(750));
+                            continue;
                         }
-                        return Ok(session_cookie);
+
+                        logger.log(&format!(
+                            "pixiv login window found candidate PHPSESSID cookie with length {}",
+                            cookie_value.len()
+                        ));
+
+                        match validate_pixiv_login_cookie(&cookie_value) {
+                            Ok(_user_uid) => {
+                                logger.log("pixiv login cookie verified");
+                                let session_cookie = PixivSessionCookie {
+                                    value: cookie_value,
+                                    domain: cookie.domain().map(str::to_owned),
+                                    path: cookie.path().map(str::to_owned),
+                                    http_only: cookie.http_only(),
+                                    secure: cookie.secure(),
+                                };
+                                if let Err(error) = login_window.close() {
+                                    logger.log(&format!(
+                                        "pixiv login window could not be closed after verified cookie refresh: {error}"
+                                    ));
+                                }
+                                return Ok(session_cookie);
+                            }
+                            Err(error) => {
+                                logger.log(&format!(
+                                    "pixiv candidate PHPSESSID is not logged in yet: {error}"
+                                ));
+                                last_candidate_cookie = Some(cookie_value);
+                                next_validation_at = Instant::now() + Duration::from_secs(3);
+                            }
+                        }
                     }
                 }
                 Err(error) => {
@@ -251,10 +276,16 @@ async fn refresh_pixiv_phpsessid(
             std::thread::sleep(Duration::from_millis(750));
         }
 
-        Err("Timed out waiting for Pixiv PHPSESSID. Please finish Pixiv login in the desktop window and try again.".to_owned())
+        Err("Timed out waiting for a verified Pixiv login. Please finish signing in to Pixiv in the desktop window and try again.".to_owned())
     })
     .await
     .map_err(|error| format!("Pixiv login task failed: {error}"))?
+}
+
+fn validate_pixiv_login_cookie(cookie_value: &str) -> Result<String, String> {
+    PixivHttpClient::new(cookie_value)
+        .and_then(|client| client.fetch_current_user_uid())
+        .map_err(|error| error.to_string())
 }
 
 fn open_or_focus_pixiv_login_window(
