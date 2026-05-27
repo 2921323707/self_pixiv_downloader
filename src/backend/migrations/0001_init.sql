@@ -138,7 +138,7 @@ CREATE TABLE IF NOT EXISTS settings (
 
 INSERT OR IGNORE INTO settings (key, value_json, is_secret, updated_at)
 VALUES
-  ('download_base_path', '"project:output"', 0, datetime('now')),
+  ('download_base_path', '"~/Downloads/Pixiv Platform"', 0, datetime('now')),
   ('deepseek_base_url', '"https://api.deepseek.com"', 0, datetime('now')),
   ('deepseek_model', '"deepseek-v4-flash"', 0, datetime('now')),
   ('default_batch_count', '20', 0, datetime('now')),

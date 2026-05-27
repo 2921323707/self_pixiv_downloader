@@ -61,7 +61,7 @@ V1 includes local usage only. It does not include account systems, cloud sync, D
 | ID | Requirement | Acceptance Criteria |
 | --- | --- | --- |
 | `REQ-CFG-001` | Configure Pixiv cookie. | User can save, update, and test PHPSESSID. |
-| `REQ-CFG-002` | Configure download path. | User can choose local base path; default is repository `output/` via `project:output`. |
+| `REQ-CFG-002` | Configure download path. | User can choose local base path; default is shared Web/App directory `~/Downloads/Pixiv Platform/`. |
 | `REQ-CFG-003` | Configure DeepSeek settings. | User can save API key, base URL, and model; defaults are `https://api.deepseek.com` and `deepseek-v4-flash`. |
 | `REQ-CFG-004` | Configure request limits. | Frontend and backend enforce max quantity per request. |
 | `REQ-CFG-005` | Configure R18/NSFW policy. | User can choose visibility/download policy, and UI reflects it consistently. |

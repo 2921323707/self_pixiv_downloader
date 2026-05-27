@@ -8,7 +8,7 @@
 - [x] 用户确认中文文档。
 - [x] 用户确认 dev 模式优先。
 - [x] 用户确认允许轻改前端 API client。
-- [x] 用户确认 MVP 沿用 `output/`。
+- [x] 早期 MVP 曾沿用 `output/`；当前默认已统一为 `~/Downloads/Pixiv Platform/`。
 - [x] 用户曾确认固定 `127.0.0.1:3000` 作为简化 MVP。
 - [x] 用户确认升级为每次启动随机端口并拼接为 API base URL。
 - [x] 建立 Tauri 项目骨架。
@@ -21,7 +21,7 @@
 
 - [x] 用户确认生产前端使用 Next 静态导出。
 - [x] `.app` MVP 初版曾简化处理，继续固定 `127.0.0.1:3000`。
-- [x] 用户确认 `.app` MVP 暂时沿用项目 `output/`。
+- [x] `.app` 默认数据目录已统一到 `~/Downloads/Pixiv Platform/`。
 - [x] 更新 Tauri build 配置以加载静态前端产物。
 - [x] `.app` 初版曾确认静态导出下 API base URL 指向 `http://127.0.0.1:3000`。
 - [x] 确认 `.app` 启动时自动启动内嵌 Axum 后端。
@@ -61,18 +61,18 @@
 - [x] 桌面默认下载目录迁移到 `~/Downloads/Pixiv Platform/`。
 - [x] 桌面默认 SQLite 迁移到 `~/Downloads/Pixiv Platform/pixiv_platform.sqlite3`。
 - [x] Settings 下载目录通过系统文件夹选择器配置。
-- [x] 旧 `output/pixiv_platform.sqlite3` 中的用户配置和图库可自动恢复到新桌面默认库。
-- [x] 旧 `output/` 下载文件可自动迁移到 `~/Downloads/Pixiv Platform/` 并改写图库路径。
+- [x] Web / 后端独立运行和桌面端默认共享 `~/Downloads/Pixiv Platform/`。
+- [x] 旧 `output/` 自动迁移逻辑已删除。
 - [x] 用户手动测试最新 `.app`，确认当前阶段功能正常。
 - [x] 正式 App 图标。
 - [x] 基础菜单：About / Quit / Reload，Developer Tools 仅 debug。
-- [x] P3a 未签名 `.dmg` 最小闭环：以没有 Apple 开发者认证为前提，产出可上传 GitHub Release 的未签名 `.dmg`。
+- [x] P3a ad-hoc signed `.dmg` 最小闭环：以没有 Apple 开发者认证为前提，产出可上传 GitHub Release 的 `.dmg`。
 - [x] P3 分发说明：记录 Gatekeeper 风险，并说明他人不需要 Rust、Cargo、Node、npm、TypeScript。
-- [x] P3 未签名 `.dmg` 最小产物验证。
+- [x] P3 `.dmg` 最小产物验证。
 - [x] P4 清理收束：已清理 `.DS_Store` 和可再生成的本地构建产物；发布产物需重新 build 生成。
 - [x] `.gitignore` 覆盖 Tauri 自动生成的 `tauri-app/src-tauri/gen/` schema 目录。
-- [x] 推荐下一版本号 `v1.1.0`，并同步 Tauri 桌面壳版本为 `1.1.0`。
-- [x] `v1.1.0` 提交前最终 build 验证通过，`.dmg` 产物文件名为
+- [x] GitHub `v1.1.1` 已 release，作为成熟交付第一版本。
+- [x] `v1.1.1` release 前最终 build 验证通过；当前本地产物文件名仍可能保留
   `Pixiv Platform_1.1.0_aarch64.dmg`。
 - [x] Pixiv 登录态刷新可行性验证：Tauri WebView cookie store 可读取 HttpOnly `PHPSESSID`；
   正式实现建议用 `cookies()` 全量读取后按 Pixiv 域过滤。
@@ -81,6 +81,8 @@
 - [x] 获取后复用现有 `pixiv_cookie` 保存和 Pixiv Test 验证。
 - [x] Pixiv 登录态刷新成功后自动关闭登录窗口并弹出非敏感成功提示。
 - [x] 用户手动 live 验证 Pixiv 登录刷新成功。
+- [x] 显式启用 macOS ad-hoc signing：`bundle.macOS.signingIdentity = "-"`。
+- [x] `.app` codesign、`.dmg` checksum 和挂载结构验证通过。
 - [ ] P3 签名、公证。
 - [ ] P3 自动更新。
 - [ ] P1 后续：如需更正式的数据分层，再评估 macOS Application Support。

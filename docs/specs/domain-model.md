@@ -74,7 +74,7 @@ Local system configuration.
 | Field | Type | Notes |
 | --- | --- | --- |
 | `pixiv_cookie` | secret string | Stored locally, masked in API responses |
-| `download_base_path` | string | Defaults to `project:output`, resolved by the backend to the repository `output/` directory |
+| `download_base_path` | string | Defaults to `~/Downloads/Pixiv Platform`, shared by Web/backend standalone and the macOS App |
 | `deepseek_api_key` | secret string | Stored locally, masked in API responses |
 | `deepseek_base_url` | string | Defaults to `https://api.deepseek.com` |
 | `deepseek_model` | string | Defaults to `deepseek-v4-flash` |

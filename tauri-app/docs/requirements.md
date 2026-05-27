@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-阶段：Desktop MVP + P3a 未签名 `.dmg` 最小分发闭环 + Pixiv 登录态刷新完成。
+阶段：`v1.1.1` 成熟交付第一版已 release；Desktop MVP、P3a `.dmg` 最小分发闭环、Pixiv 登录态刷新和 macOS ad-hoc signing 均已完成。
 
 目标是在 macOS 上跑通一个可开发验证的 Tauri 桌面壳。该壳引用现有
 `src/frontend` 前端与 `src/backend` Rust 后端，不复制业务代码。
@@ -16,16 +16,14 @@
 - 桌面端每次启动绑定 `127.0.0.1` 随机可用端口，避免固定端口冲突。
 - Tauri 创建 WebView 时注入运行时 API base URL，前端优先使用该值访问本地 Rust API。
 - 前端 API 层保留环境变量切换后端 base URL，作为 Web 开发兼容路径。
-- 桌面端默认下载目录迁移到 `~/Downloads/Pixiv Platform/`。
+- Web / 后端独立运行和桌面端默认共享 `~/Downloads/Pixiv Platform/`。
 - 桌面端默认 SQLite 放在默认下载目录下的 `pixiv_platform.sqlite3`，除非运行时显式配置
   `PIXIV_PLATFORM_DB_PATH`。
-- 首次迁移时，如果新桌面 SQLite 不存在，或只包含初始化默认设置且旧
-  `output/pixiv_platform.sqlite3` 仍包含用户配置/图库数据，则从旧项目 `output/`
-  自动迁移数据库和已下载图片到 `~/Downloads/Pixiv Platform/`。
+- 旧项目 `output/` 不再作为默认下载目录，也不再自动迁移。
 - 平台 Settings 中下载目录配置应通过系统文件夹选择器选择，不要求用户手动输入目录路径。
-- 在用户没有 Apple Developer Program / Apple 开发者认证背景的前提下，先产出未签名、
+- 在用户没有 Apple Developer Program / Apple 开发者认证背景的前提下，先产出 ad-hoc signed、
   未公证的 macOS `.dmg`，用于 GitHub Release 小范围分发验证。
-- 分发文档需说明：未签名/未公证 `.dmg` 上传 GitHub Release 后，其他 macOS 用户可能遇到
+- 分发文档需说明：未 Developer ID 签名、未公证 `.dmg` 上传 GitHub Release 后，其他 macOS 用户可能遇到
   Gatekeeper 拦截；但运行已打包应用不需要安装 Rust、Cargo、Node、npm 或 TypeScript。
 - Settings 中 Pixiv 连接应支持桌面端内置 Pixiv 登录窗口刷新 `PHPSESSID`，降低用户手动从浏览器
   开发者工具复制 cookie 的成本。
@@ -38,8 +36,8 @@
 
 - 不做 Windows 桌面端。
 - 不做手机端。
-- 不做代码签名、Apple notarization、公证或自动更新。
-- 不迁移到 macOS Application Support 数据目录；用户已确认桌面默认目录使用
+- 不做 Apple Developer ID 签名、Apple notarization、公证或自动更新；允许 Tauri bundle 使用 ad-hoc signing 修复 bundle 完整性。
+- 不迁移到 macOS Application Support 数据目录；用户已确认共享默认目录使用
   `~/Downloads/Pixiv Platform/`。
 - 不复制前端或后端源码到 `tauri-app`。
 - 不重写现有 HTTP API 为 Tauri commands。

@@ -1,14 +1,16 @@
 # Project Progress
 
-Last updated: 2026-05-26
+Last updated: 2026-05-27
 
 ## Current Anchor
 
-The project is anchored on a downloader-first implementation path.
+The project is anchored on a downloader-first implementation path plus a mature macOS desktop delivery baseline.
 
-Current phase: **v1.0.0 Final Delivery** complete and frozen on the downloader-first product boundary.
+Current phase: **v1.1.1 Mature First Delivery** has been released on GitHub and accepted by the user as the first mature delivery version.
 
 The core Pixiv single-work download path is proven with mock tests, one live Pixiv smoke test, DB-aware local indexing, task-state persistence, deterministic stage/integration test scripts, a thin Axum API wrapper, an in-process Tokio background queue/worker, a Next.js frontend workbench, gallery/settings/task-list data APIs, settings-backed Pixiv cookie/download-root resolution for frontend-initiated downloads, secure local image file serving for Gallery previews, Gallery hard-delete file/index cleanup, author batch download, bookmark batch download, DeepSeek-backed smart prompt parsing, smart tag-search batch download, a Home dashboard backed by real task/image/settings APIs, and UI polish across Home/Download/Tasks/Gallery/Settings. This is now accepted as the v1.0.0 downloader-first final shape.
+
+Desktop delivery anchor on 2026-05-27: GitHub `v1.1.1` is released. The Tauri macOS desktop app now includes random backend port injection, startup health checks, visible startup diagnostics, desktop logging, shared Web/App default data paths, Gallery preview stability, built-in Pixiv `PHPSESSID` refresh, and explicit macOS ad-hoc signing for the app bundle. The package is still not Apple Developer ID signed or notarized.
 
 Manual browser anchor on 2026-05-22: Settings-saved Pixiv credential plus a single Pixiv ID submitted from the frontend successfully downloaded a work, completed the task flow, and wrote the file locally. User also manually validated Author Batch and Bookmarks Batch through the frontend.
 
@@ -19,6 +21,10 @@ Manual browser anchor on 2026-05-23: Home Dashboard loaded through the local fro
 Implementation anchor on 2026-05-23: Phase 7B UI polish changed Download into a tabbed workbench, Gallery image details into a right-side drawer, Tasks details into a centered modal with the recent list defaulting to 10 rows plus expand-more, Settings into categorized panels, and Home into a less cramped workbench with a recent normal image banner. No new backend APIs were required.
 
 Implementation anchor on 2026-05-23: Phase 7B follow-up refined the first polish pass without adding backend APIs. Home now selects banner candidates from normal wide-ish images first and falls back to recent normal images, Recent Tasks is capped to three rows, Recent Downloads / Configuration panel actions align to stable footers, and the dashboard includes Rust Core Driver annotations, Performance Watch, and next capability slots. Smart supports manual positive/negative tag chips before enqueueing `/api/smart/download`, API client responses handle empty/non-JSON bodies with readable errors, and Gallery drawer / Tasks modal can close via button, backdrop, or ESC.
+
+Maintenance anchor on 2026-05-27: the former 3570-line `src/backend/src/api.rs` has been split into `src/backend/src/api/` modules for routes, DTO/envelope/error mapping, runtime settings/path resolution, worker queue glue, focused handlers, and API tests. External imports such as `pixiv_platform_backend::api::{AppState, router, serve, serve_listener}` remain compatible.
+
+Release verification anchor on 2026-05-27: after the API module split, `./tests/unit/backend_unit.sh` passed with 86 backend tests, `./tests/run_local.sh` passed end-to-end for all deterministic local gates, and `cd tauri-app && npm run build` produced a fresh ad-hoc signed macOS `.app` plus `Pixiv Platform_1.1.0_aarch64.dmg`. The `.app` passed `codesign --verify --deep --strict`; the `.dmg` passed `hdiutil verify`. Live Pixiv E2E was not run in this shell because `PIXIV_PHPSESSID` was not present.
 
 Release anchor on 2026-05-23: the project is frozen as **v1.0.0 Final Delivery**. The release scope is the stable local downloader/indexer/workbench loop, not every future product idea. Thumbnail cache, Top10/Random discovery modes, cancel/retry, richer edit/map APIs, and semantic search are optional post-delivery evolution tracks rather than v1.0.0 blockers.
 
@@ -41,7 +47,7 @@ Completed backend slice:
 - Gallery file API now returns `Content-Length` for local image bytes, improving Tauri WebView preview stability.
 - Settings APIs: `GET /api/settings` and `PUT /api/settings/{key}` with repository-level allowlist validation and secret masking.
 - Settings-backed runtime resolution for single downloads: `pixiv_cookie` and `download_base_path`.
-- Default download root is repository `output/` via `project:output` when no explicit path is configured.
+- Default download root is shared by Web/backend standalone and macOS App: `~/Downloads/Pixiv Platform/` when no explicit path is configured.
 - Pixiv connection test API: `POST /api/settings/test/pixiv`.
 - DeepSeek connection test API: `POST /api/settings/test/deepseek`.
 - Smart parse API: `POST /api/smart/parse`.
@@ -81,8 +87,8 @@ The v1.0.0 Final Delivery shape is complete.
 | Wire task polling by task id | Done | `src/frontend/app/tasks/page.tsx` |
 | Add frontend quality script | Done | `tests/stage/frontend_scaffold.sh` |
 | Run `./tests/run_local.sh` | Done | Backend checks plus frontend typecheck/build passed |
-| Add gallery metadata API | Done | `src/backend/src/images/mod.rs`, `src/backend/src/api.rs` |
-| Add settings list/save API | Done | `src/backend/src/settings/mod.rs`, `src/backend/src/api.rs` |
+| Add gallery metadata API | Done | `src/backend/src/images/mod.rs`, `src/backend/src/api/` |
+| Add settings list/save API | Done | `src/backend/src/settings/mod.rs`, `src/backend/src/api/` |
 | Replace Home placeholders with real dashboard | Done | `src/frontend/app/page.tsx`, `src/frontend/app/globals.css` |
 | Reuse task/image/settings APIs on Home | Done | `src/frontend/app/page.tsx`, `src/frontend/lib/api.ts` |
 | Add Home dashboard frontend gate | Done | `tests/stage/frontend_scaffold.sh` |
@@ -93,27 +99,27 @@ The v1.0.0 Final Delivery shape is complete.
 | Convert Settings to categorized panels | Done | `src/frontend/app/settings/page.tsx`, `src/frontend/app/globals.css` |
 | Add Phase 7B frontend scaffold anchors | Done | `tests/stage/frontend_scaffold.sh` |
 | Confirm v1.0.0 final delivery | Done | README / handoff / progress release anchor |
-| Add task list API | Done | `src/backend/src/tasks/mod.rs`, `src/backend/src/api.rs` |
+| Add task list API | Done | `src/backend/src/tasks/mod.rs`, `src/backend/src/api/` |
 | Wire Gallery / Settings / Tasks to real data | Done | `src/frontend/app/gallery/page.tsx`, `src/frontend/app/settings/page.tsx`, `src/frontend/app/tasks/page.tsx` |
 | Add Phase 4B deterministic script | Done | `tests/stage/phase4b_data_api.sh` |
-| Add settings-backed download runtime | Done | `src/backend/src/api.rs` |
+| Add settings-backed download runtime | Done | `src/backend/src/api/` |
 | Add Pixiv connection test API | Done | `POST /api/settings/test/pixiv` |
 | Add Settings Pixiv test control | Done | `src/frontend/app/settings/page.tsx` |
 | Add Phase 4C deterministic script | Done | `tests/stage/phase4c_configured_download.sh` |
 | Complete manual browser single-download validation | Done | User manually downloaded by Pixiv ID through the frontend on 2026-05-22 |
-| Add secure gallery file endpoint | Done | `GET /api/images/{image_id}/file`, `src/backend/src/api.rs` |
+| Add secure gallery file endpoint | Done | `GET /api/images/{image_id}/file`, `src/backend/src/api/` |
 | Add image file resolution helper | Done | `resolve_image_file`, `src/backend/src/images/mod.rs` |
 | Wire Gallery previews to real image bytes | Done | `src/frontend/app/gallery/page.tsx` |
 | Add Phase 4D deterministic script | Done | `tests/stage/phase4d_gallery_file_api.sh` |
 | Add default batch count setting | Done | `src/backend/src/settings/mod.rs`, `src/backend/migrations/0001_init.sql` |
 | Add author discovery to Pixiv client | Done | `fetch_author_works`, `src/backend/src/pixiv/mod.rs` |
 | Add author batch task lifecycle | Done | `create_author_download_task`, `execute_author_download_task`, `src/backend/src/tasks/mod.rs` |
-| Add author batch API | Done | `POST /api/downloads/author`, `src/backend/src/api.rs` |
+| Add author batch API | Done | `POST /api/downloads/author`, `src/backend/src/api/` |
 | Wire Download Author form | Done | `src/frontend/app/download/page.tsx`, `src/frontend/lib/api.ts` |
 | Add Phase 5A deterministic script | Done | `tests/stage/phase5a_author_batch.sh` |
 | Add bookmark discovery to Pixiv client | Done | `fetch_bookmarks`, `src/backend/src/pixiv/mod.rs` |
 | Add bookmark batch task lifecycle | Done | `create_bookmark_download_task`, `execute_bookmark_download_task`, `src/backend/src/tasks/mod.rs` |
-| Add bookmark batch API | Done | `POST /api/downloads/bookmarks`, `src/backend/src/api.rs` |
+| Add bookmark batch API | Done | `POST /api/downloads/bookmarks`, `src/backend/src/api/` |
 | Wire Download Bookmarks form | Done | `src/frontend/app/download/page.tsx`, `src/frontend/lib/api.ts` |
 | Add Phase 5B deterministic script | Done | `tests/stage/phase5b_bookmark_batch.sh` |
 | Add Gallery hard-delete repository/API | Done | `delete_image_file_and_index`, `DELETE /api/images/{image_id}`, `POST /api/images/delete-batch` |
@@ -121,8 +127,8 @@ The v1.0.0 Final Delivery shape is complete.
 | Add Phase 4E deterministic script | Done | `tests/stage/phase4e_gallery_delete.sh` |
 | Add DeepSeek model setting default | Done | `deepseek_model = deepseek-v4-flash`, `src/backend/src/settings/mod.rs` |
 | Add DeepSeek HTTP client and parser | Done | `src/backend/src/ai.rs` |
-| Add Smart Parse API | Done | `POST /api/smart/parse`, `src/backend/src/api.rs` |
-| Add DeepSeek connection test API | Done | `POST /api/settings/test/deepseek`, `src/backend/src/api.rs` |
+| Add Smart Parse API | Done | `POST /api/smart/parse`, `src/backend/src/api/` |
+| Add DeepSeek connection test API | Done | `POST /api/settings/test/deepseek`, `src/backend/src/api/` |
 | Wire Settings DeepSeek test/model | Done | `src/frontend/app/settings/page.tsx`, `src/frontend/lib/api.ts` |
 | Wire Download Smart parse preview | Done | `src/frontend/app/download/page.tsx`, `src/frontend/lib/api.ts` |
 | Add Phase 6A deterministic script | Done | `tests/stage/phase6a_smart_parse.sh` |
@@ -130,10 +136,10 @@ The v1.0.0 Final Delivery shape is complete.
 | Add Pixiv smart tag search | Done | `search_works_by_tags`, `src/backend/src/pixiv/mod.rs` |
 | Add smart batch task lifecycle | Done | `create_smart_download_task`, `execute_smart_download_task`, `src/backend/src/tasks/mod.rs` |
 | Persist smart retrieval provenance | Done | `smart_retrievals`, prompt/model/tags/count/r18 stored when task is created |
-| Add Smart Download API | Done | `POST /api/smart/download`, `src/backend/src/api.rs` |
+| Add Smart Download API | Done | `POST /api/smart/download`, `src/backend/src/api/` |
 | Wire Download Smart enqueue | Done | `src/frontend/app/download/page.tsx`, `src/frontend/lib/api.ts`; parsed tags are editable before enqueue |
 | Add Phase 6B deterministic script | Done | `tests/stage/phase6b_smart_download.sh` |
-| Stabilize Tauri Gallery previews | Done | `src/frontend/app/gallery/page.tsx`, `src/backend/src/api.rs`; preview loads are staggered/lazy/retried and image file responses include `Content-Length` |
+| Stabilize Tauri Gallery previews | Done | `src/frontend/app/gallery/page.tsx`, `src/backend/src/api/`; preview loads are staggered/lazy/retried and image file responses include `Content-Length` |
 
 ## Completed
 
@@ -141,7 +147,7 @@ The v1.0.0 Final Delivery shape is complete.
 | --- | --- | --- |
 | PRD understanding | Done | `docs/product_requirements.md` reviewed and decomposed into specs |
 | Spec structure | Done | `docs/specs/` contains requirements, domain, DB, API, frontend, theme, task flow, testing, traceability |
-| Theme direction | Done | Demo B selected as `cyan-studio`; `demo_B.html` retained as reference |
+| Theme direction | Done | Demo B selected as `cyan-studio`; `docs/design/theme-reference/demo_B.html` retained as reference |
 | Downloader-first architecture | Done | `docs/specs/architecture.md` |
 | Pixiv client strategy | Done | `docs/specs/pixiv-client.md` |
 | File layout strategy | Done | `docs/specs/file-storage.md` |
@@ -160,8 +166,8 @@ The v1.0.0 Final Delivery shape is complete.
 | DB-aware downloader | Done | `download_single_with_db`, Phase 2B downloader tests |
 | Task persistence | Done | `src/backend/src/tasks/mod.rs`, Phase 2C task tests |
 | Test script expansion | Done | `phase2c_tasks.sh`, `backend_sqlite.sh`, expanded `run_local.sh` |
-| Axum API wrapper | Done | `src/backend/src/api.rs`, `src/backend/src/bin/server.rs`, `tests/smoke/backend_api.sh` |
-| Background task queue | Done | `src/backend/src/api.rs`, `src/backend/src/tasks/mod.rs`, `tests/stage/phase3b_queue.sh` |
+| Axum API wrapper | Done | `src/backend/src/api/`, `src/backend/src/bin/server.rs`, `tests/smoke/backend_api.sh` |
+| Background task queue | Done | `src/backend/src/api/`, `src/backend/src/tasks/mod.rs`, `tests/stage/phase3b_queue.sh` |
 | Frontend scaffold | Done | `src/frontend`, `tests/stage/frontend_scaffold.sh` |
 | Phase 4B data API wiring | Done | `tests/stage/phase4b_data_api.sh`, Gallery/Settings/Tasks frontend pages |
 | Phase 4C configured single download | Done | `tests/stage/phase4c_configured_download.sh`, settings-backed worker runtime |
@@ -175,6 +181,8 @@ The v1.0.0 Final Delivery shape is complete.
 | Phase 7B UI polish | Done | `src/frontend/app/{page.tsx,download/page.tsx,gallery/page.tsx,tasks/page.tsx,settings/page.tsx}`, `tests/stage/frontend_scaffold.sh` |
 | Document map | Done | `docs/DOCUMENT_MAP.md` |
 | Root README | Done | `README.md` |
+| Cleanup refresh | Done | Build caches removed, old project `output/` removed, unused static assets removed, theme demos archived under `docs/design/theme-reference/` |
+| Shared default storage | Done | Web/backend standalone and macOS App now default to `~/Downloads/Pixiv Platform/`; old project `output/` migration logic removed |
 
 ## Current Verification
 
@@ -188,8 +196,18 @@ Current result:
 
 ```text
 ./tests/run_local.sh
-82 backend unit tests passed; Phase 2A checks passed; Phase 2C checks passed; backend SQLite integration checks passed; backend API smoke checks passed; Phase 3B queue checks passed; Phase 4B data API checks passed; Phase 4C configured download checks passed; Phase 4D gallery file API checks passed; Phase 4E gallery delete checks passed; Phase 5A author batch checks passed; Phase 5B bookmark batch checks passed; Phase 6A smart parse checks passed; Phase 6B smart download checks passed; frontend scaffold checks passed; 0 failed
+86 backend unit tests passed; Phase 2A checks passed; Phase 2C checks passed; backend SQLite integration checks passed; backend API smoke checks passed; Phase 3B queue checks passed; Phase 4B data API checks passed; Phase 4C configured download checks passed; Phase 4D gallery file API checks passed; Phase 4E gallery delete checks passed; Phase 5A author batch checks passed; Phase 5B bookmark batch checks passed; Phase 6A smart parse checks passed; Phase 6B smart download checks passed; frontend scaffold checks passed; 0 failed
 ```
+
+Latest desktop release build:
+
+```text
+cd tauri-app && npm run build
+codesign --verify --deep --strict --verbose=2 "tauri-app/src-tauri/target/release/bundle/macos/Pixiv Platform.app"
+hdiutil verify "tauri-app/src-tauri/target/release/bundle/dmg/Pixiv Platform_1.1.0_aarch64.dmg"
+```
+
+Current result: `.app` valid on disk and satisfies its Designated Requirement; `.dmg` checksum is valid. Artifact path: `tauri-app/src-tauri/target/release/bundle/dmg/Pixiv Platform_1.1.0_aarch64.dmg`.
 
 Latest focused frontend gate:
 
@@ -203,6 +221,8 @@ Live E2E is opt-in:
 ```text
 PIXIV_PHPSESSID=... ./tests/e2e/live_single_download.sh
 ```
+
+Latest live E2E status: not run in the 2026-05-27 release verification shell because `PIXIV_PHPSESSID` was not set. Keep it opt-in and runtime-only.
 
 Current live E2E script status:
 

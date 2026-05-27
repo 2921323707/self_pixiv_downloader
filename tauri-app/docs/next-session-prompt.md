@@ -1,79 +1,42 @@
-# 新会话首轮提示词
+# 下一会话提示词
 
-请在 `/Users/Admin/Downloads/pixiv_platform` 继续工作。本轮不要全局浏览仓库，采用渐进式披露检索。
-第一轮只读：
+你在 `/Users/Admin/Downloads/pixiv_platform` 继续 Pixiv Platform 项目。请节省 token，不要全仓库浏览。
 
-1. `tauri-app/docs/progress.md`
-2. `tauri-app/docs/implementation-plan.md`
-3. `tauri-app/docs/architecture.md`
-4. `tauri-app/docs/testing.md`
-5. `tauri-app/docs/checklist.md`
+请先读取：
 
-如果要检查清理项，再读：
-
-6. `docs/cleanup_candidates.md`
-
-如果要改需求边界，再读：
-
-7. `tauri-app/docs/requirements.md`
+1. `README.md`
+2. `docs/CONTEXT_HANDOFF.md`
+3. `docs/DOCUMENT_MAP.md`
+4. `docs/progress.md`
+5. `tauri-app/docs/progress.md`
+6. `tauri-app/docs/testing.md`
+7. `tauri-app/docs/distribution.md`
 
 当前锚点：
 
-- `tauri-app` 是桌面壳，不复制 `src/frontend` 或 `src/backend`。
-- 前端仍来自 `src/frontend`；后端通过 Cargo path dependency 引用 `src/backend`。
-- Desktop MVP、随机端口、`GET /api/health`、运行时 API base URL 注入、`.app` / 未签名 `.dmg`
-  最小闭环、旧库自动恢复、基础菜单、启动诊断、Gallery 删除修复、Gallery 预览稳定性修复均已完成。
-- 当前版本号锚定为 `v1.1.0`，`.app` / `.dmg` 构建产物由 `.gitignore` 忽略，不纳入提交。
-- Pixiv 内置登录窗口刷新 `PHPSESSID` 已完成正式实现和用户 live 验证：
-  Settings 的 Pixiv cookie 行在 Tauri 桌面端有 Refresh；
-  点击后打开/聚焦 Pixiv 官方登录窗口；
-  用户手动在 Pixiv 官方页面登录；
-  Tauri command `refresh_pixiv_phpsessid` 使用 `WebviewWindow.cookies()` 全量读取 cookie store，
-  按 `name == "PHPSESSID"` 和 Pixiv 域过滤；
-  前端保存到现有 `pixiv_cookie` setting 并自动执行 Pixiv Test；
-  成功后自动关闭 Pixiv 登录窗口，并在 Settings 主窗口弹出不含 secret 的成功提示。
-- 不采集 Pixiv 账号密码；登录必须发生在 Pixiv 官方页面。
-- 不在日志、文档、测试输出中打印完整 `PHPSESSID`；只允许输出是否存在、长度和非敏感元信息。
-- 手动输入 Pixiv cookie 继续作为 fallback。
-- 最新 build 已成功产出：
-  `tauri-app/src-tauri/target/release/bundle/macos/Pixiv Platform.app`；
-  `tauri-app/src-tauri/target/release/bundle/dmg/Pixiv Platform_1.1.0_aarch64.dmg`。
+- GitHub `v1.1.1` 已 release，用户确认它可以作为成熟的交付第一版本。
+- 后端仍是 downloader-first：Pixiv single / Author / Bookmarks / Smart 下载、SQLite 索引、任务队列、Gallery、Settings、Tasks、Home 均可用。
+- 2026-05-27 已完成 API 层拆分：原 `src/backend/src/api.rs` 现在拆为 `src/backend/src/api/`，包含 `routes.rs`、`dto.rs`、`error.rs`、`runtime.rs`、`worker.rs`、`handlers/*` 和 `tests.rs`。外部入口 `pixiv_platform_backend::api::{AppState, router, serve, serve_listener}` 保持兼容。
+- 本轮验证已完成：`./tests/unit/backend_unit.sh` 通过 86 个后端测试；`./tests/run_local.sh` 通过全部本地确定性门禁；`cd tauri-app && npm run build` 成功生成 `.app` 和 `.dmg`。
+- 最新发布产物：`tauri-app/src-tauri/target/release/bundle/dmg/Pixiv Platform_1.1.0_aarch64.dmg`，本地大小约 8.2M。`.app` 通过 `codesign --verify --deep --strict`，`.dmg` 通过 `hdiutil verify`。
+- Live Pixiv E2E 未运行，因为当前 shell 未设置 `PIXIV_PHPSESSID`。如要运行，使用 `PIXIV_PHPSESSID=... ./tests/e2e/live_single_download.sh`，不要把 cookie 写入仓库。
+- Tauri macOS 桌面壳复用 `src/frontend` 和 `src/backend`，不复制业务代码；桌面端使用随机端口、`GET /api/health`、运行时 API base URL 注入、启动失败窗口和 `~/Library/Logs/Pixiv Platform/desktop.log`。
+- Web / 后端独立运行和桌面端默认共享 `~/Downloads/Pixiv Platform/`；旧 `output/` 不再自动迁移。
+- 当前包仍未 Developer ID 签名、未公证；Gatekeeper 可能要求用户手动允许。
 
-建议下一阶段优先方向：
+Debug 时优先关注：
 
-1. Gallery Quality / Thumbnail Cache：当前 Gallery 列表预览已稳定，但仍主要加载原图；建议生成真实小缩略图，
-   降低 WebView 内存与网络压力，提升大图库滚动体验。
-2. 清理收束：如用户确认，可删除 `.DS_Store`、`src/frontend/.next`、`src/frontend/out`、
-   `tauri-app/src-tauri/target`、`tauri-app/node_modules` 等可再生成产物；未确认前不要删除。
-3. P3a 小范围分发复核：手动打开最新 `.dmg`，拖入 Applications 后启动，确认测试用户安装体验。
-4. Pixiv Refresh 体验微调：可选增加取消按钮、剩余等待时间、更细的错误提示；当前功能闭环已通过。
-5. P1 后续数据正式化：如需更正式的数据分层，再评估 SQLite 是否从
-   `~/Downloads/Pixiv Platform/` 迁移到 `~/Library/Application Support/Pixiv Platform/`。
-6. P3 后续正式分发：签名、公证、自动更新仅作为未来路径；当前仍按未签名 `.dmg` 小范围分发。
+- 后端 API 模块入口：`src/backend/src/api/mod.rs` 和 `src/backend/src/api/routes.rs`。
+- API handlers：`src/backend/src/api/handlers/`。
+- API runtime/worker：`src/backend/src/api/runtime.rs`、`src/backend/src/api/worker.rs`。
+- 任务执行核心：`src/backend/src/tasks/mod.rs`，特别是 `execute_queued_task`。
+- 启动日志：`~/Library/Logs/Pixiv Platform/desktop.log`。
+- DMG/签名：`codesign --verify --deep --strict`、`hdiutil verify`、挂载卷内 app 与 Applications 链接。
+- Pixiv secret：不要打印完整 `PHPSESSID`。
 
-建议如果进入 Gallery Thumbnail Cache：
+建议下一步：
 
-1. 先读 `src/backend` 中图片下载、文件路径、`GET /api/images`、`GET /api/images/{id}/file` 相关代码。
-2. 再读 `src/frontend/app/gallery/page.tsx` 的预览渲染和错峰加载逻辑。
-3. 设计缩略图存储位置、生成时机、失败回退和迁移策略，不要先大改。
-4. 验证优先跑相关后端测试、`cd src/frontend && npm run lint`、
-   `cd src/frontend && NEXT_OUTPUT_EXPORT=1 npm run build`；需要完整产物时再跑
-   `cd tauri-app && npm run build`。
-
-渐进式披露规则：
-
-- 只在当前任务需要时打开具体代码文件。
-- 用 `rg` 精确搜索符号或路径。
-- 不重复读取大文件，不重新总结整个仓库。
-- 先给最小实现计划，再动代码。
-- 遵循 spec-coding：实现后同步 `progress` / `checklist` / `testing`。
-
-当前清理复核：
-
-- `.DS_Store` 又出现在根目录、`static/` 和 Tauri bundle 目录。
-- `src/frontend/.next`、`src/frontend/out`、`tauri-app/src-tauri/target`、`tauri-app/node_modules`
-  因验证/build 重新生成。
-- `src/frontend/.next/dev/lock` 曾存在；如确认没有 Next dev server 正在运行，可删除。
-- 未获用户明确批准前不要删除这些文件。
-
-默认不要 git commit、add、push，除非用户明确要求。
+1. 以 `v1.1.1` 为成熟交付基线，优先处理缺陷修复、安装体验和小范围分发反馈。
+2. 若继续做功能，优先 Gallery Thumbnail Cache，降低大图库滚动和 WebView 压力。
+3. 正式公开分发前，再评估 Apple Developer ID 签名、公证和自动更新。
+4. 文档更新采用“顶部锚点覆写 + 关键 debug 信息保留 + 阶段结束压缩”，避免继续堆流水。

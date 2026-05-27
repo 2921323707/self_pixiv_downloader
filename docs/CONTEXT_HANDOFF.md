@@ -4,13 +4,15 @@
 
 ## 一句话项目状态
 
-这是一个本地优先的 Pixiv AI 下载与智能检索平台。当前采用 downloader-first 路线，已跑通真实 Pixiv 单作品下载，并已完成 SQLite migration、图片仓储、settings 仓储、DB-aware downloader、任务状态持久化、确定性测试脚本结构、薄 Axum API wrapper、in-process Tokio 后台任务队列、Next.js 前端工作台、Phase 4B gallery/settings/task-list 最小数据 API 接线、Phase 4D Gallery 文件预览、Phase 4E Gallery 删除、Phase 5A 作者批量下载、Phase 5B 收藏批量下载、Phase 6A DeepSeek 智能解析、Phase 6B smart 标签搜索批量下载、Phase 7A Home Dashboard 首页真实化、Phase 7B UI Layout / Interaction Polish、Phase 7B follow-up UI 格式检查与交互修补，以及 2026-05-26 Tauri Gallery 预览稳定性修复。按 downloader-first 产品边界，当前可作为 v1.0.0 最终形态；桌面壳当前锚定 v1.1.0。
+这是一个本地优先的 Pixiv AI 下载与智能检索平台。当前采用 downloader-first 路线，已跑通真实 Pixiv 单作品下载，并已完成 SQLite migration、图片仓储、settings 仓储、DB-aware downloader、任务状态持久化、确定性测试脚本结构、薄 Axum API wrapper、in-process Tokio 后台任务队列、Next.js 前端工作台、Gallery/Settings/Tasks/Home 真实数据接线、作者批量下载、收藏批量下载、DeepSeek 智能解析、smart 标签搜索批量下载、UI polish、Tauri macOS 桌面壳、Web/App 默认共享下载目录、Gallery 预览稳定性修复、Pixiv 内置登录刷新 `PHPSESSID`、以及 macOS ad-hoc signed `.app` / `.dmg` 分发验证。GitHub `v1.1.1` 已 release，用户确认它可作为成熟交付第一版本。
 
 ## 当前阶段
 
-当前阶段：**v1.0.0 Final Delivery** 已完成并冻结为当前交付版本；Tauri 桌面壳当前锚定 **v1.1.0** 稳定性收尾。
+当前阶段：**v1.1.1 Mature First Delivery** 已 release。后续以缺陷修复、安装体验、小范围分发反馈和可选功能演进为主。
 
-2026-05-22 手动浏览器锚点：用户已确认在前端输入 Pixiv 作品 ID 可以成功下载，并确认 Author Batch 和 Bookmarks Batch 可用。2026-05-23：Smart Retrieval 已从“解析标签”推进到“解析后入队 smart 批量下载”，并经用户手动检查当前没有明显问题。同日 Home Dashboard 已在本地浏览器确认可通过真实 API 展示任务、图库预览和配置状态，控制台无错误。2026-05-23：Phase 7B UI polish 已完成确定性前端检查，未新增后端 API。Phase 7B follow-up 已补 Home banner 前端候选筛选、Home panel 底部对齐、Home command center / Rust Core Driver / Performance Watch、Smart 正/负 tag chip 手动输入、API client 空/非 JSON 响应保护、Gallery drawer / Tasks modal 关闭交互和移动端布局锚点，仍未新增后端 API。2026-05-26：定位并修复 Tauri 桌面 Gallery 偶发预览空白问题，原因是列表在 macOS WebView 内并发加载多张原图，详情页单张加载因此正常；修复为列表预览错峰/lazy/async decode/失败重试，并给后端图片文件响应补 `Content-Length`。当前策略已调整为：冻结当前形态为 v1.0.0 final delivery，并由标准 `main` 分支承载交付主线；桌面壳按 v1.1.0 继续小范围分发稳定化。
+关键锚点：2026-05-22 用户确认前端单作品、Author Batch、Bookmarks Batch 可用。2026-05-23 Smart Retrieval、Home Dashboard、Phase 7B UI polish 完成。2026-05-26 修复 Tauri Gallery 偶发预览空白，原因是 macOS WebView 内并发加载多张原图；修复为错峰/lazy/async decode/失败重试，并给图片文件响应补 `Content-Length`。2026-05-26 至 2026-05-27 完成 Pixiv 内置登录刷新 `PHPSESSID`、`.dmg` 损坏提示复查、macOS ad-hoc signing、codesign 和 hdiutil 验证。当前策略：以 `v1.1.1` 为成熟交付基线，文档采用“顶部锚点覆写 + 关键 debug 信息保留 + 阶段结束压缩”。
+
+最新维护锚点：2026-05-27 已完成 `src/backend/src/api.rs` 拆分，现为 `src/backend/src/api/` 模块树；外部 `api::{AppState, router, serve, serve_listener}` 入口保持兼容。同日重新运行 `./tests/unit/backend_unit.sh`、`./tests/run_local.sh`、`cd tauri-app && npm run build`、`codesign --verify --deep --strict` 和 `hdiutil verify` 均通过。Live Pixiv E2E 因当前 shell 未提供 `PIXIV_PHPSESSID` 未运行，仍保持 opt-in。
 
 ## 当前真实边界
 
@@ -43,7 +45,7 @@
 - `smart_retrievals` provenance persistence
 - settings-backed `pixiv_cookie` / `download_base_path` runtime resolution for single-download tasks
 - `default_batch_count` 默认批量数量设置，默认 `20`
-- default download root resolves to repository `output/` through `project:output`
+- default download root resolves to `~/Downloads/Pixiv Platform/` for both Web/backend standalone and macOS App
 
 v1.x / v2 候选，不属于 v1.0.0 阻塞：
 
@@ -107,7 +109,11 @@ v1.x / v2 候选，不属于 v1.0.0 阻塞：
 | 图片仓储 | `src/backend/src/images/mod.rs` |
 | Settings 仓储 | `src/backend/src/settings/mod.rs` |
 | 任务仓储 / worker 包装 | `src/backend/src/tasks/mod.rs` |
-| Axum API wrapper | `src/backend/src/api.rs` |
+| Axum API wrapper | `src/backend/src/api/` |
+| API routes / server helpers | `src/backend/src/api/routes.rs` |
+| API DTO / envelope / errors | `src/backend/src/api/dto.rs`, `src/backend/src/api/error.rs` |
+| API runtime settings / queue worker | `src/backend/src/api/runtime.rs`, `src/backend/src/api/worker.rs` |
+| API handlers | `src/backend/src/api/handlers/` |
 | DeepSeek / smart parse | `src/backend/src/ai.rs` |
 | Pixiv tag search | `src/backend/src/pixiv/mod.rs` |
 | 后端 server 入口 | `src/backend/src/bin/server.rs` |
@@ -124,8 +130,18 @@ v1.x / v2 候选，不属于 v1.0.0 阻塞：
 当前结果：
 
 ```text
-82 backend unit tests passed; Phase 2A checks passed; Phase 2C checks passed; backend SQLite integration checks passed; backend API smoke checks passed; Phase 3B queue checks passed; Phase 4B data API checks passed; Phase 4C configured download checks passed; Phase 4D gallery file API checks passed; Phase 4E gallery delete checks passed; Phase 5A author batch checks passed; Phase 5B bookmark batch checks passed; Phase 6A smart parse checks passed; Phase 6B smart download checks passed; frontend scaffold checks passed; 0 failed
+86 backend unit tests passed; Phase 2A checks passed; Phase 2C checks passed; backend SQLite integration checks passed; backend API smoke checks passed; Phase 3B queue checks passed; Phase 4B data API checks passed; Phase 4C configured download checks passed; Phase 4D gallery file API checks passed; Phase 4E gallery delete checks passed; Phase 5A author batch checks passed; Phase 5B bookmark batch checks passed; Phase 6A smart parse checks passed; Phase 6B smart download checks passed; frontend scaffold checks passed; 0 failed
 ```
+
+最新桌面构建验证：
+
+```text
+cd tauri-app && npm run build
+codesign --verify --deep --strict --verbose=2 "tauri-app/src-tauri/target/release/bundle/macos/Pixiv Platform.app"
+hdiutil verify "tauri-app/src-tauri/target/release/bundle/dmg/Pixiv Platform_1.1.0_aarch64.dmg"
+```
+
+当前产物：`tauri-app/src-tauri/target/release/bundle/dmg/Pixiv Platform_1.1.0_aarch64.dmg`，本地大小约 8.2M；`.app` ad-hoc signed 且 codesign 校验通过；`.dmg` checksum valid。
 
 真实 Pixiv E2E：
 
@@ -134,6 +150,7 @@ PIXIV_PHPSESSID=... ./tests/e2e/live_single_download.sh
 ```
 
 注意：不要把 Pixiv cookie 写进仓库。
+最新状态：2026-05-27 release verification shell 未设置 `PIXIV_PHPSESSID`，所以未运行 live E2E。
 
 ## 已验证事实
 
@@ -159,8 +176,10 @@ PIXIV_PHPSESSID=... ./tests/e2e/live_single_download.sh
 - 2026-05-22 用户手动浏览器验证已通过：Author Batch 下载成功
 - 2026-05-22 用户手动浏览器验证已通过：Bookmarks Batch 下载成功
 - Phase 3B 清理检查已完成：仅生成候选清单，没有删除文件
+- 2026-05-27 用户确认清理已执行：构建缓存删除，旧项目 `output/` 删除，未引用静态资源删除，主题 demo 移至 `docs/design/theme-reference/`
+- 2026-05-27 默认存储路径统一：Web/backend standalone 与 macOS App 默认共享 `~/Downloads/Pixiv Platform/`，旧 `output/` 自动迁移逻辑已删除
 - 默认主题已选 `cyan-studio`
-- 当前仓库保留 `demo_B.html` 作为视觉参考
+- 当前仓库保留 `docs/design/theme-reference/demo_B.html` 作为视觉参考
 - `src/backend/target/` 是构建产物，已忽略
 - `Cargo.lock` 应保留，用于应用级 Rust 项目可复现构建
 
@@ -186,12 +205,12 @@ PIXIV_PHPSESSID=... ./tests/e2e/live_single_download.sh
 4. docs/specs/traceability.md 里与本次任务相关的 REQ 行
 
 当前锚点：
-- 当前项目已冻结为 v1.0.0 Final Delivery。
+- 当前项目已 release 为 v1.1.1 Mature First Delivery。
 - 单图下载、Author Batch、Bookmarks Batch、Smart Retrieval Parse -> 编辑标签/chips -> Enqueue smart download 均已可用并经用户手动检查或确定性检查。
 - Home、Download、Tasks、Gallery、Settings 已接入真实 API；Home 是 command center，包含最近 3 条任务、normal 横向候选 banner、Rust Core Driver 注解、Performance Watch 和后续能力槽。
 - 当前 UI polish：Download tabs 工作台、Gallery 右侧详情 drawer、Tasks 详情 modal 与展开更多、Settings 分类面板、Home command center。
-- 后端 downloader-first 核心稳定；Top10/Random、缩略图缓存、任务 cancel/retry、图片编辑/map、语义检索等已经转为 v1.x / v2 进化方向，不再阻塞 v1.0.0。
-- 默认下载目录是项目 output/，secret 只允许运行时配置，禁止写入 Pixiv cookie 或 DeepSeek key。
+- 后端 downloader-first 核心和 macOS 桌面端交付链路稳定；Top10/Random、缩略图缓存、任务 cancel/retry、图片编辑/map、语义检索等已经转为 v1.x / v2 进化方向，不再阻塞 v1.1.1。
+- 默认下载目录是 `~/Downloads/Pixiv Platform/`，secret 只允许运行时配置，禁止写入 Pixiv cookie 或 DeepSeek key。
 - live Pixiv / live LLM 测试保持 opt-in。
 
 本轮目标：围绕 v1.0.0 之后的进化与优化方向做方案讨论，优先选择一个高技术复杂度、产品收益明显、符合本地优先路线的功能方向。
@@ -206,7 +225,7 @@ PIXIV_PHPSESSID=... ./tests/e2e/live_single_download.sh
 只在确定要实现某个方向后，再读取相关代码文件。常见入口：
 - 后端图片/图库：src/backend/src/images/mod.rs
 - 后端任务：src/backend/src/tasks/mod.rs
-- 后端 Pixiv/API：src/backend/src/pixiv/mod.rs、src/backend/src/api.rs
+- 后端 Pixiv/API：src/backend/src/pixiv/mod.rs、src/backend/src/api/
 - 文件路径/安全：src/backend/src/storage/mod.rs
 - DB migration：src/backend/migrations/0001_init.sql
 - 前端 Home/Gallery/Download/Tasks：src/frontend/app/page.tsx、src/frontend/app/gallery/page.tsx、src/frontend/app/download/page.tsx、src/frontend/app/tasks/page.tsx

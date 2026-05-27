@@ -1,38 +1,69 @@
 # Tauri Desktop Distribution
 
-## P3a 未签名 `.dmg` 小范围分发
+## 当前发布锚点
 
-当前用户没有 Apple Developer Program / Apple 开发者认证背景，因此 P3a 只做未签名、
-未公证 `.dmg` 的最小闭环。
+GitHub `v1.1.1` 已 release。用户确认当前 `v1.1.1` 可作为成熟的交付第一版本。
 
-当前产物：
+当前 macOS 包是 ad-hoc signed、未 Developer ID 签名、未公证。它适合小范围分发和手动允许启动的测试/交付场景；正式公开分发前仍需要评估 Apple Developer ID 签名、公证和自动更新。
+
+## 构建产物
+
+执行：
 
 ```text
-tauri-app/src-tauri/target/release/bundle/dmg/Pixiv Platform_1.1.0_aarch64.dmg
+cd tauri-app
+npm install
+npm run build
 ```
 
-同次 build 也会产出 `.app`：
+产物：
 
 ```text
 tauri-app/src-tauri/target/release/bundle/macos/Pixiv Platform.app
+tauri-app/src-tauri/target/release/bundle/dmg/Pixiv Platform_1.1.0_aarch64.dmg
 ```
 
-## GitHub Release 上传说明
+说明：当前本地 Tauri 配置和产物文件名仍可能保留 `1.1.0` 字样；GitHub 当前公开 release 锚点为 `v1.1.1`。后续如需要统一包体文件名，再同步 Tauri 版本号与 release asset 命名。
 
-1. 执行 `cd tauri-app && npm run build`。
-2. 确认 `.dmg` 产物存在。
-3. 在 GitHub Release 中上传 `.dmg` 文件作为 release asset。
-4. Release notes 中明确写明该产物未签名、未公证，首次打开可能被 macOS Gatekeeper 拦截。
-5. 告知测试用户：运行 `.dmg` 内已打包应用不需要安装 Rust、Cargo、Node、npm 或 TypeScript。
+最新本机构建锚点（2026-05-27）：`cd tauri-app && npm run build` 成功，`.dmg` 路径为 `tauri-app/src-tauri/target/release/bundle/dmg/Pixiv Platform_1.1.0_aarch64.dmg`，本地大小约 8.2M。`.app` 通过 `codesign --verify --deep --strict`，`.dmg` 通过 `hdiutil verify`。
+
+## 签名边界
+
+Tauri macOS bundle 显式使用：
+
+```json
+"macOS": {
+  "signingIdentity": "-"
+}
+```
+
+这会对 `.app` bundle 执行 ad-hoc signing，并生成完整 sealed resources，避免旧构建中 `.app` 缺少完整 `_CodeSignature/CodeResources` 导致的损坏提示风险。
+
+这不等同于 Apple Developer ID 签名，也不等同于 notarization。
 
 ## 本机验证点
 
-- `.dmg` 可以挂载。
+```text
+codesign --verify --deep --strict --verbose=2 "tauri-app/src-tauri/target/release/bundle/macos/Pixiv Platform.app"
+hdiutil verify "tauri-app/src-tauri/target/release/bundle/dmg/Pixiv Platform_1.1.0_aarch64.dmg"
+hdiutil attach -nobrowse -readonly "tauri-app/src-tauri/target/release/bundle/dmg/Pixiv Platform_1.1.0_aarch64.dmg"
+ls -la "/Volumes/Pixiv Platform"
+codesign --verify --deep --strict --verbose=2 "/Volumes/Pixiv Platform/Pixiv Platform.app"
+hdiutil detach "/Volumes/Pixiv Platform"
+```
+
+验证标准：
+
+- `.app` codesign 校验通过。
+- `.dmg` checksum 校验通过。
 - 挂载卷中存在 `Pixiv Platform.app`。
-- 挂载卷中存在指向 `/Applications` 的拖拽链接。
-- 验证后卸载 `.dmg` 卷，避免留下挂载状态。
+- 挂载卷中存在 `Applications -> /Applications` 拖拽链接。
+- 验证后卸载 `.dmg` 卷。
 
-## 未来正式分发
+## GitHub Release 说明
 
-签名、公证和自动更新只作为未来正式分发路径评估。不要把 Apple 账号、证书、notary
-profile、API key、secret 或本地私有路径写入仓库或文档。
+Release notes 需要明确：
+
+- 运行 `.dmg` 内已打包应用不需要安装 Rust、Cargo、Node、npm 或 TypeScript。
+- 当前包未 Developer ID 签名、未公证，macOS Gatekeeper 可能要求用户在系统安全设置中手动允许。
+- 不要把 Apple 账号、证书、notary profile、API key、secret 或本地私有路径写入仓库或文档。

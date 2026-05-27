@@ -8,6 +8,9 @@
 | --- | --- |
 | 当前项目进度 | `docs/progress.md` |
 | 如何快速恢复上下文 | `docs/CONTEXT_HANDOFF.md` |
+| macOS 桌面端交付状态 | `tauri-app/docs/progress.md` |
+| macOS 桌面端测试标准 | `tauri-app/docs/testing.md` |
+| macOS `.dmg` 分发说明 | `tauri-app/docs/distribution.md` |
 | 原始 PRD | `docs/product_requirements.md` |
 | spec-coding 文档索引 | `docs/specs/README.md` |
 | 需求到代码/测试的追踪 | `docs/specs/traceability.md` |
@@ -41,14 +44,21 @@
 | --- | --- |
 | `docs/specs/frontend-spec.md` | 页面/路由计划与前端状态模型 |
 | `docs/specs/visual-theme.md` | 主题规则与已选中的 `cyan-studio` 方向 |
-| `demo_B.html` | 当前视觉参考页面 |
+| `docs/design/theme-reference/demo_B.html` | 当前视觉参考页面 |
+| `docs/design/theme-reference/sakura-light.html` | 备选主题视觉参考页面 |
 
 ## 当前实现地图
 
 | 模块 | 路径 |
 | --- | --- |
 | 后端 crate | `src/backend` |
-| Axum API wrapper | `src/backend/src/api.rs` |
+| Axum API wrapper | `src/backend/src/api/` |
+| API route registration | `src/backend/src/api/routes.rs` |
+| API DTO / response mapping | `src/backend/src/api/dto.rs` |
+| API error envelope mapping | `src/backend/src/api/error.rs` |
+| API runtime settings / path resolution | `src/backend/src/api/runtime.rs` |
+| API worker queue glue | `src/backend/src/api/worker.rs` |
+| API handlers | `src/backend/src/api/handlers/` |
 | SQLite 初始迁移 | `src/backend/migrations/0001_init.sql` |
 | DB migration runner | `src/backend/src/db/mod.rs` |
 | 图片仓储 | `src/backend/src/images/mod.rs` |
@@ -91,6 +101,6 @@
 | 文件布局 | `{download_root}/originals/{pixiv_id}/{pixiv_id}_p{page}.{ext}` |
 | Secret 处理 | 本地存储，对外 public 读取必须 mask |
 | Live 测试 | 手动 opt-in，凭证运行时提供 |
-| 当前阶段 | v1.0.0 Final Delivery：Downloader-First 交付版已冻结 |
-| 当前手动验证 | 2026-05-22 前端输入 Pixiv ID 下载成功；Author Batch 和 Bookmarks Batch 下载成功；2026-05-23 Smart Parse/Edit/Enqueue 与 Home Dashboard 已手动确认 |
-| 后续策略 | `main` 承载 v1.0.0 final delivery；Top10/Random、缩略图缓存、任务 cancel/retry 等归入交付后可选演进 |
+| 当前阶段 | v1.1.1 Mature First Delivery：GitHub 已 release，用户确认为成熟交付第一版本 |
+| 当前手动验证 | 前端单作品、Author Batch、Bookmarks Batch、Smart Retrieval、Home Dashboard、Tauri 桌面端、Pixiv Login/Refresh 均已手动确认 |
+| 后续策略 | 以 v1.1.1 为成熟交付基线；Top10/Random、缩略图缓存、任务 cancel/retry、正式签名/公证等归入交付后可选演进 |

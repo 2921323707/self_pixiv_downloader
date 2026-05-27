@@ -1,6 +1,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use std::fs::{self, OpenOptions, create_dir_all};
+use std::fs::{OpenOptions, create_dir_all};
 use std::io::{Read, Write};
 use std::net::{SocketAddr, TcpListener, TcpStream};
 use std::path::PathBuf;
@@ -10,7 +10,6 @@ use std::time::SystemTime;
 use std::time::{Duration, Instant};
 
 use pixiv_platform_backend::api::{AppState, EnvPixivClientFactory, serve_listener};
-use pixiv_platform_backend::db;
 use serde::Serialize;
 use tauri::menu::{AboutMetadata, Menu, MenuBuilder, MenuItemBuilder, SubmenuBuilder};
 use tauri::webview::Cookie;
@@ -290,14 +289,10 @@ fn start_backend(logger: &DesktopLogger) -> Result<SocketAddr, std::io::Error> {
 fn desktop_app_state(logger: &DesktopLogger) -> AppState {
     let download_root = std::env::var_os("PIXIV_DOWNLOAD_ROOT")
         .map(PathBuf::from)
-        .unwrap_or_else(|| desktop_download_root().unwrap_or_else(|| PathBuf::from("output")));
+        .unwrap_or_else(|| default_download_root());
     let db_path = std::env::var_os("PIXIV_PLATFORM_DB_PATH")
         .map(PathBuf::from)
         .unwrap_or_else(|| download_root.join("pixiv_platform.sqlite3"));
-
-    if std::env::var_os("PIXIV_PLATFORM_DB_PATH").is_none() {
-        migrate_legacy_desktop_data(&db_path, &download_root, logger);
-    }
 
     logger.log(&format!(
         "pixiv platform desktop storage using download root {} and db {}",
@@ -308,211 +303,11 @@ fn desktop_app_state(logger: &DesktopLogger) -> AppState {
     AppState::new(db_path, download_root, Arc::new(EnvPixivClientFactory))
 }
 
-fn migrate_legacy_desktop_data(db_path: &PathBuf, download_root: &PathBuf, logger: &DesktopLogger) {
-    let Some(legacy_root) = legacy_project_output_dir() else {
-        return;
-    };
-    let legacy_db_path = legacy_root.join("pixiv_platform.sqlite3");
-    if !legacy_db_path.exists() || legacy_db_path == *db_path {
-        return;
-    }
-
-    let should_restore = if db_path.exists() {
-        desktop_db_looks_empty(db_path, logger) && legacy_db_has_user_data(&legacy_db_path, logger)
-    } else {
-        true
-    };
-    if !should_restore {
-        return;
-    }
-
-    if let Some(parent) = db_path.parent() {
-        if let Err(error) = create_dir_all(parent) {
-            logger.log(&format!(
-                "desktop legacy data migration skipped because target directory could not be created: {error}"
-            ));
-            return;
-        }
-    }
-
-    if db_path.exists() {
-        let backup_path = db_path.with_extension(format!(
-            "sqlite3.empty-before-legacy-migration-{}",
-            unix_timestamp()
-        ));
-        match fs::copy(db_path, &backup_path) {
-            Ok(_) => logger.log(&format!(
-                "desktop legacy data migration backed up existing empty db to {}",
-                backup_path.display()
-            )),
-            Err(error) => {
-                logger.log(&format!(
-                    "desktop legacy data migration skipped because existing db backup failed: {error}"
-                ));
-                return;
-            }
-        }
-    }
-
-    if let Err(error) = copy_legacy_download_files(&legacy_root, download_root, logger) {
-        logger.log(&format!(
-            "desktop legacy data migration could not copy all downloaded files: {error}"
-        ));
-    }
-
-    match fs::copy(&legacy_db_path, db_path) {
-        Ok(_) => {
-            logger.log(&format!(
-                "desktop legacy data migration copied db from {} to {}",
-                legacy_db_path.display(),
-                db_path.display()
-            ));
-            rewrite_migrated_image_paths(db_path, &legacy_root, download_root, logger);
-        }
-        Err(error) => logger.log(&format!(
-            "desktop legacy data migration failed to copy db from {}: {error}",
-            legacy_db_path.display()
-        )),
-    }
-}
-
-fn desktop_db_looks_empty(db_path: &PathBuf, logger: &DesktopLogger) -> bool {
-    match db_summary(db_path) {
-        Ok(summary) => summary.image_count == 0 && !summary.has_pixiv_cookie,
-        Err(error) => {
-            logger.log(&format!(
-                "desktop legacy data migration could not inspect target db: {error}"
-            ));
-            false
-        }
-    }
-}
-
-fn legacy_db_has_user_data(db_path: &PathBuf, logger: &DesktopLogger) -> bool {
-    match db_summary(db_path) {
-        Ok(summary) => summary.image_count > 0 || summary.has_pixiv_cookie,
-        Err(error) => {
-            logger.log(&format!(
-                "desktop legacy data migration could not inspect legacy db: {error}"
-            ));
-            false
-        }
-    }
-}
-
-struct DbSummary {
-    image_count: i64,
-    has_pixiv_cookie: bool,
-}
-
-fn db_summary(db_path: &PathBuf) -> Result<DbSummary, String> {
-    let conn = db::open(db_path).map_err(|error| error.to_string())?;
-    let image_count = conn
-        .query_row("SELECT COUNT(*) FROM images", [], |row| {
-            row.get::<_, i64>(0)
-        })
-        .map_err(|error| error.to_string())?;
-    let pixiv_cookie_count = conn
-        .query_row(
-            "SELECT COUNT(*) FROM settings WHERE key = 'pixiv_cookie'",
-            [],
-            |row| row.get::<_, i64>(0),
-        )
-        .map_err(|error| error.to_string())?;
-    Ok(DbSummary {
-        image_count,
-        has_pixiv_cookie: pixiv_cookie_count > 0,
-    })
-}
-
-fn copy_legacy_download_files(
-    legacy_root: &PathBuf,
-    download_root: &PathBuf,
-    logger: &DesktopLogger,
-) -> Result<(), std::io::Error> {
-    if !legacy_root.exists() {
-        return Ok(());
-    }
-    create_dir_all(download_root)?;
-    copy_directory_contents(legacy_root, download_root, logger)
-}
-
-fn copy_directory_contents(
-    source: &PathBuf,
-    destination: &PathBuf,
-    logger: &DesktopLogger,
-) -> Result<(), std::io::Error> {
-    for entry in fs::read_dir(source)? {
-        let entry = entry?;
-        let source_path = entry.path();
-        let file_name = entry.file_name();
-        if file_name == "pixiv_platform.sqlite3" {
-            continue;
-        }
-
-        let destination_path = destination.join(file_name);
-        let file_type = entry.file_type()?;
-        if file_type.is_dir() {
-            create_dir_all(&destination_path)?;
-            copy_directory_contents(&source_path, &destination_path, logger)?;
-        } else if file_type.is_file() && !destination_path.exists() {
-            fs::copy(&source_path, &destination_path)?;
-        } else if !file_type.is_file() {
-            logger.log(&format!(
-                "desktop legacy data migration skipped non-file path {}",
-                source_path.display()
-            ));
-        }
-    }
-    Ok(())
-}
-
-fn rewrite_migrated_image_paths(
-    db_path: &PathBuf,
-    legacy_root: &PathBuf,
-    download_root: &PathBuf,
-    logger: &DesktopLogger,
-) {
-    let legacy_prefix = legacy_root.to_string_lossy().to_string();
-    let download_prefix = download_root.to_string_lossy().to_string();
-    match db::open(db_path).and_then(|conn| {
-        conn.execute(
-            "UPDATE images
-             SET local_path = replace(local_path, ?1, ?2)
-             WHERE local_path LIKE ?3",
-            (
-                legacy_prefix.as_str(),
-                download_prefix.as_str(),
-                format!("{legacy_prefix}%"),
-            ),
-        )?;
-        Ok(())
-    }) {
-        Ok(()) => logger.log("desktop legacy data migration rewrote migrated image paths"),
-        Err(error) => logger.log(&format!(
-            "desktop legacy data migration could not rewrite image paths: {error}"
-        )),
-    }
-}
-
-fn legacy_project_output_dir() -> Option<PathBuf> {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .and_then(std::path::Path::parent)
-        .map(|root| root.join("output"))
-}
-
-fn desktop_download_root() -> Option<PathBuf> {
+fn default_download_root() -> PathBuf {
     std::env::var_os("HOME")
         .map(PathBuf::from)
         .map(|home| home.join("Downloads/Pixiv Platform"))
-}
-
-fn unix_timestamp() -> u64 {
-    SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .map(|duration| duration.as_secs())
-        .unwrap_or_default()
+        .unwrap_or_else(|| PathBuf::from("Pixiv Platform"))
 }
 
 fn wait_for_backend_health(addr: SocketAddr, logger: &DesktopLogger) -> Result<(), std::io::Error> {

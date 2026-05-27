@@ -4,7 +4,7 @@ Requirements: `REQ-DL-001`, `REQ-DL-006`, `REQ-IMG-001`, `REQ-IMG-003`, `REQ-SEC
 
 ## Default Download Root
 
-Default: `project:output`, resolved by the backend to the repository `output/` directory.
+Default: `~/Downloads/Pixiv Platform/`, shared by Web/backend standalone runs and the macOS App.
 
 Tests and live smoke scripts should use a temporary directory unless the user explicitly chooses a persistent path.
 

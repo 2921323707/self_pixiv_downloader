@@ -114,7 +114,10 @@ export default function HomePage() {
     [settings]
   );
   const taskCounts = useMemo(() => summarizeTasks(tasks), [tasks]);
-  const downloadBasePath = settingText(settingsByKey.download_base_path, "project:output");
+  const downloadBasePath = settingText(
+    settingsByKey.download_base_path,
+    "~/Downloads/Pixiv Platform",
+  );
   const defaultBatchCount = settingText(settingsByKey.default_batch_count, "20");
   const maxRequestCount = settingText(settingsByKey.max_request_count, "100");
   const performanceStats = [

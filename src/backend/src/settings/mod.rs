@@ -182,7 +182,7 @@ fn setting_definition(key: &str) -> Option<SettingDefinition> {
 
 fn default_public_value_json(definition: SettingDefinition) -> &'static str {
     match definition.key {
-        "download_base_path" => "\"project:output\"",
+        "download_base_path" => "\"~/Downloads/Pixiv Platform\"",
         "deepseek_base_url" => "\"https://api.deepseek.com\"",
         "deepseek_model" => "\"deepseek-v4-flash\"",
         "default_batch_count" => "20",
@@ -269,12 +269,9 @@ fn validate_download_base_path(value: &Value) -> Result<(), AppError> {
             "download_base_path cannot contain NUL bytes",
         ));
     }
-    if path == "project:output" {
-        return Ok(());
-    }
     if !(path.starts_with('/') || path == "~" || path.starts_with("~/")) {
         return Err(AppError::validation(
-            "download_base_path must be absolute, start with ~, or be project:output",
+            "download_base_path must be absolute or start with ~",
         ));
     }
     Ok(())
@@ -435,8 +432,11 @@ mod tests {
                 .is_err()
         );
         assert!(
-            repo.upsert_known_json("download_base_path", &serde_json::json!("project:output"))
-                .is_ok()
+            repo.upsert_known_json(
+                "download_base_path",
+                &serde_json::json!("~/Downloads/Pixiv Platform")
+            )
+            .is_ok()
         );
     }
 }

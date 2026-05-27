@@ -544,7 +544,7 @@ Request:
 
 ```json
 {
-  "download_base_path": "project:output",
+  "download_base_path": "~/Downloads/Pixiv Platform",
   "deepseek_base_url": "https://api.deepseek.com",
   "default_batch_count": 20,
   "max_request_count": 100,

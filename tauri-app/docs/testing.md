@@ -1,191 +1,66 @@
 # Tauri Desktop Testing Standard
 
+## 当前目标
+
+`v1.1.1` 已作为成熟交付第一版本 release。当前测试标准不再追踪每一次重复 build 流水，而是保留：
+
+- 交付验收标准。
+- 最小命令行质量门。
+- 对后续 debug 有价值的失败根因和排查入口。
+- live 测试的安全边界。
+
+最新验证锚点：2026-05-27 在 API 模块拆分后重新运行 `./tests/unit/backend_unit.sh`、`./tests/run_local.sh`、`cd tauri-app && npm run build`、`codesign --verify --deep --strict`、`hdiutil verify` 均通过。Live Pixiv E2E 未运行，因为当前 shell 未设置 `PIXIV_PHPSESSID`。
+
 ## 分层验证
 
-MVP 阶段按成本从低到高验证：
+按成本从低到高验证：
 
-1. 文档完整性检查：需求、架构、计划、进度、清单同步。
-2. 前端静态检查：`npm run lint`。
-3. 前端构建检查：`npm run build`。
-4. 后端 Rust 检查：优先运行相关 `cargo test` 或 `cargo check`。
-5. Tauri 配置检查：`npm run tauri -- info` 或等价命令。
-6. Tauri dev 手动验证：窗口打开，页面加载，API 可访问。
+1. 文档一致性：版本锚点、交付边界、分发说明、测试标准同步。
+2. 前端静态检查：`cd src/frontend && npm run lint`。
+3. 前端构建检查：`cd src/frontend && npm run build`。
+4. 静态导出检查：`cd src/frontend && NEXT_OUTPUT_EXPORT=1 npm run build`。
+5. 后端检查：`cd src/backend && cargo check`，必要时运行相关 `cargo test`。
+6. Tauri 检查：`cd tauri-app/src-tauri && cargo check`。
+7. Tauri release build：`cd tauri-app && npm run build`。
+8. macOS bundle 验证：`codesign`、`hdiutil verify`、挂载结构检查。
+9. 用户手动验证：打开 `.app` 或 `.dmg` 安装后确认核心页面与下载流程。
 
-## MVP 验收页
+## 交付验收点
 
-桌面窗口中至少确认以下页面能打开：
+桌面端：
 
-- Home
-- Download
-- Gallery
-- Tasks
-- Settings
+- `.app` 双击后无需手动启动 Next dev server 或 Rust server。
+- Tauri 进程内 Axum 后端监听 `127.0.0.1:<random-port>`。
+- 主窗口创建前 `GET /api/health` 返回 `200 OK`。
+- Home / Download / Gallery / Tasks / Settings 可访问。
+- 前端通过 Tauri 注入的运行时 API base URL 访问后端，不写死 `127.0.0.1:3000`。
+- 退出 `.app` 后不残留独立后端进程。
+- 后端启动或健康检查失败时，桌面窗口显示错误原因和日志路径。
+- 日志写入 `~/Library/Logs/Pixiv Platform/desktop.log`。
 
-当前自动/命令行验证已确认 `GET /` 返回 `200 OK`。页面级人工巡检仍建议由用户
-在 Tauri 窗口中点开五个页面复核。
+数据与设置：
 
-2026-05-26：用户手动测试 P0 收尾版本 `.app`，确认通过。
+- Web / 后端独立运行和桌面端默认下载根目录均为 `~/Downloads/Pixiv Platform/`。
+- 默认 SQLite 路径为 `~/Downloads/Pixiv Platform/pixiv_platform.sqlite3`。
+- 旧项目 `output/` 不再自动恢复；如需旧数据，应通过备份或显式路径配置处理。
+- Settings 下载目录在 Tauri 桌面端通过系统文件夹选择器配置。
+- Settings 保存 secret 后仍显示 masked secret，不向 UI 或日志暴露完整值。
 
-2026-05-26：主页面左上角 logo 替换为图标后，`cd src/frontend && npm run lint`
-通过。
+Pixiv 登录态刷新：
 
-2026-05-26：因旧 `.app` 仍显示默认 logo，重新执行 `cd tauri-app && npm run build`；
-新的静态导出主页已包含 `/app-icon.png`。
+- Settings 中 Pixiv Login/Refresh 可打开官方 Pixiv 登录窗口。
+- 用户登录后自动获取 Pixiv 域下的 `PHPSESSID` 并保存为 `pixiv_cookie`。
+- 成功后自动执行 Pixiv connection test，关闭登录窗口，并显示不含 secret 的成功提示。
+- Web 端不自动读取 Pixiv cookie；网页环境继续由用户手动填写 `pixiv_cookie` 并使用 Test 验证。
 
-2026-05-26：Gallery 删除问题排查：
-`cd src/backend && cargo test req_img_007` 通过，确认后端删除 API 正常；
-前端删除确认改为应用内 modal 后，`cd src/frontend && npm run lint`、
-`cd src/frontend && NEXT_OUTPUT_EXPORT=1 npm run build`、`cd tauri-app && npm run build`
-均通过。静态产物已包含 `delete-confirm-modal`。
+macOS 分发：
 
-2026-05-26：用户手动打开最新 `.app` 直接运行并测试，确认没有问题。
+- `.dmg` 可产出并通过 `hdiutil verify`。
+- `.dmg` 可挂载，卷内存在 `Pixiv Platform.app` 和 `Applications -> /Applications`。
+- `.app` 通过 `codesign --verify --deep --strict`。
+- 当前包是 ad-hoc signed、未 Developer ID 签名、未公证；Gatekeeper 仍可能要求用户手动允许。
 
-2026-05-26：P2 启动诊断补强：
-Tauri 启动流程新增 `~/Library/Logs/Pixiv Platform/desktop.log` 追加日志；
-后端启动或健康检查失败时会创建启动失败窗口，显示错误原因和日志路径；
-`cd tauri-app/src-tauri && cargo check`、`cd src/frontend && npm run lint`、
-`cd src/frontend && NEXT_OUTPUT_EXPORT=1 npm run build`、`cd tauri-app && npm run build`
-均通过。曾并行触发一次 Tauri build 与独立 Next build，因 `.next/lock` 竞争失败；
-随后单独重跑 `cd tauri-app && npm run build` 通过。
-
-2026-05-26：热缓存测速：
-`cd tauri-app/src-tauri && /usr/bin/time -p cargo check` real 0.78s；
-`cd src/frontend && /usr/bin/time -p npm run lint` real 1.07s；
-`cd src/frontend && /usr/bin/time -p env NEXT_OUTPUT_EXPORT=1 npm run build` real 4.92s；
-`cd tauri-app && /usr/bin/time -p npm run build` real 26.58s。
-
-2026-05-26：P1 桌面默认下载目录迁移：
-Tauri 桌面端未设置 `PIXIV_DOWNLOAD_ROOT` 时默认使用
-`~/Downloads/Pixiv Platform/`；未设置 `PIXIV_PLATFORM_DB_PATH` 时默认使用
-`~/Downloads/Pixiv Platform/pixiv_platform.sqlite3`；Settings 页面下载目录改为 Tauri
-文件夹选择器选择并自动保存。验证通过：
-`cd tauri-app/src-tauri && cargo check`、`cd src/frontend && npm run lint`、
-`cd src/frontend && env NEXT_OUTPUT_EXPORT=1 npm run build`、`cd tauri-app && npm run build`。
-曾因自定义 command 缺少 Tauri app permission manifest 导致一次 build 失败；补充
-`permissions/select-download-directory.toml` 后重跑通过。
-
-2026-05-26：P1 旧库自动恢复修复：
-用户反馈打开迁移后的 `.app` 后旧图库和旧配置消失，并提示
-`Pixiv cookie is required in settings or PIXIV_PHPSESSID`。确认旧
-`output/pixiv_platform.sqlite3` 仍包含 `pixiv_cookie` 与 22 条图库记录，而新桌面库为空图库。
-修复为：新桌面 SQLite 不存在，或新桌面库没有 `pixiv_cookie` 且没有图库记录时，若旧
-`output/pixiv_platform.sqlite3` 有用户数据，则备份新空库、复制旧库、复制旧下载文件到
-`~/Downloads/Pixiv Platform/`，并把图片绝对路径改写到新目录。验证通过：
-`cd tauri-app/src-tauri && cargo check`、`cd tauri-app && npm run build`。
-
-2026-05-26：用户手动测试最新 `.app`，确认旧库自动恢复后的当前阶段功能正常。
-
-2026-05-26：P2 基础菜单：
-新增 Tauri 原生菜单 About / Quit / Reload，Developer Tools 仅 debug 构建显示，并保留
-File / Edit / Window 常见菜单项。验证通过：
-`cd tauri-app/src-tauri && cargo check`、`cd tauri-app/src-tauri && cargo check --release`、
-`cd tauri-app && npm run build`。新的 `.app` 产物位于
-`tauri-app/src-tauri/target/release/bundle/macos/Pixiv Platform.app`。用户手动测试最新
-`.app`，确认 P2 基础菜单后当前阶段功能正常。
-
-2026-05-26：P3a 未签名 `.dmg` 最小闭环：
-Tauri bundle targets 扩展为 `app` 和 `dmg`，验证通过：
-`cd tauri-app/src-tauri && cargo check`、`cd tauri-app && npm run build`。首次在沙箱内执行
-`npm run build` 时，`.app` 已产出，但 `bundle_dmg.sh` 无法完成 macOS 磁盘映像挂载/打包；
-随后按权限规则在沙箱外重跑同一命令通过。新的 `.dmg` 产物位于
-`tauri-app/src-tauri/target/release/bundle/dmg/Pixiv Platform_1.1.0_aarch64.dmg`，大小约
-6.1M。本机挂载验证通过：`.dmg` CRC 校验通过，挂载卷中存在 `Pixiv Platform.app` 和
-`Applications -> /Applications` 拖拽链接；验证后已卸载。
-
-2026-05-26：残留清理：
-已删除全部 `.DS_Store`，以及可再生成的 `src/frontend/.next`、`src/frontend/out`、
-`src/frontend/tsconfig.tsbuildinfo`、`tauri-app/src-tauri/target`、`tauri-app/node_modules`。
-清理后 `find . -name .DS_Store -print` 无输出，相关构建目录已不存在。由于
-`tauri-app/src-tauri/target` 已清理，本地 `.app` / `.dmg` 产物也已移除；发布或人工分发复核前
-需重新执行 `cd tauri-app && npm run build`。
-
-2026-05-26：`v1.1.0` 提交前最终验证：
-推荐下一版本号为 `v1.1.0`，并同步 Tauri 桌面壳版本到 `1.1.0`。验证通过：
-`cd tauri-app/src-tauri && cargo check`、`cd tauri-app && npm install`、
-`cd tauri-app && npm run build`。新的 `.dmg` 产物位于
-`tauri-app/src-tauri/target/release/bundle/dmg/Pixiv Platform_1.1.0_aarch64.dmg`，大小约
-6.1M。最终复核 `find . -name .DS_Store -print` 无输出；重新生成的
-`src/frontend/.next`、`src/frontend/out`、`tauri-app/node_modules`、`tauri-app/src-tauri/target`
-均为 `.gitignore` 覆盖的本地构建/依赖产物。
-
-2026-05-26：Pixiv 登录态刷新可行性验证：
-为避免直接改正式功能，先临时加入环境变量触发的 Tauri cookie probe，验证后已移除临时代码。
-验证通过：
-`cd tauri-app/src-tauri && cargo check`；
-`PIXIV_COOKIE_PROBE=1 cargo run`。探针启动临时本地 WebView，页面响应写入
-`Set-Cookie: PHPSESSID=...; HttpOnly`，Rust 侧通过 `WebviewWindow.cookies()` 读到该 cookie。
-探针同时确认原生 `set_cookie` 写入的 HttpOnly cookie 可读。输出只包含 cookie 名称、长度和
-`http_only` 状态，不打印完整值。观察：本地 `127.0.0.1` 场景中 `cookies_for_url()` 返回为空，
-但 `cookies()` 返回完整 cookie store；正式实现应优先 `cookies()` 后按 Pixiv 域过滤。
-临时代码清理后再次执行 `cd tauri-app/src-tauri && cargo check` 通过。
-
-2026-05-26：Pixiv 登录态刷新正式实现与 live 验证：
-实现 Tauri command `refresh_pixiv_phpsessid`，打开/聚焦官方 Pixiv 登录窗口，通过
-`WebviewWindow.cookies()` 全量读取 cookie store 后按 `PHPSESSID` 和 Pixiv 域过滤。Settings
-中 `pixiv_cookie` 行新增桌面端 Refresh 按钮，获取后通过既有 settings API 保存为
-`pixiv_cookie`，随后自动执行 Pixiv connection test。获取成功后自动关闭 Pixiv 登录窗口，并在
-Settings 主窗口弹出不含 secret 的成功提示。用户手动在 Pixiv 官方登录窗口完成登录后确认刷新成功。
-验证通过：
-`cd tauri-app/src-tauri && cargo check`；
-`cd src/frontend && npm run lint`；
-`cd src/frontend && NEXT_OUTPUT_EXPORT=1 npm run build`；
-`cd tauri-app && npm run build`。最新产物：
-`tauri-app/src-tauri/target/release/bundle/macos/Pixiv Platform.app` 和
-`tauri-app/src-tauri/target/release/bundle/dmg/Pixiv Platform_1.1.0_aarch64.dmg`。
-
-## `.app` 打包验收
-
-首轮 `.app` MVP 打包验收按最小闭环执行：
-
-1. `cd src/frontend && npm run build` 可成功生成生产产物。
-2. `cd tauri-app && npm run build` 可成功生成 macOS `.app`。
-3. 双击 `.app` 后无需手动启动 Next dev server。
-4. Tauri 进程内 Axum 后端监听 `127.0.0.1:<random-port>`。
-5. Tauri 创建主窗口前 `GET /api/health` 返回 `200 OK`。
-6. Home / Download / Gallery / Tasks / Settings 可访问。
-7. `GET /api/settings`、`GET /api/tasks`、`GET /api/images` 可用或返回清晰错误。
-8. 退出 `.app` 后不残留独立后端进程。
-9. `127.0.0.1:3000` 被旧实例占用时，新 `.app` 仍可通过随机端口启动。
-10. 静态 `.app` 直连本地 API 时，后端返回 `Access-Control-Allow-Origin`。
-11. 静态导出产物不写死 `127.0.0.1:3000`，前端通过 Tauri 注入的运行时 API base URL 访问后端。
-12. 后端启动或健康检查失败时，桌面窗口显示错误原因和日志文件路径。
-13. 桌面端未设置 `PIXIV_DOWNLOAD_ROOT` 时，默认下载根目录为
-    `~/Downloads/Pixiv Platform/`。
-14. 桌面端未设置 `PIXIV_PLATFORM_DB_PATH` 时，默认 SQLite 路径为
-    `~/Downloads/Pixiv Platform/pixiv_platform.sqlite3`。
-15. Settings 页面下载目录配置在 Tauri 桌面端通过系统文件夹选择器选择。
-16. 从旧项目 `output/` 升级到桌面默认目录时，旧 SQLite 中的 Pixiv cookie、图库记录和
-    已下载图片路径应自动迁移，避免出现空图库或缺失 cookie。
-17. 未签名、未公证 `.dmg` 可产出，并可在本机挂载后看到 `.app` 与 Applications 拖拽链接。
-18. Settings 中 Pixiv Login/Refresh 可打开官方 Pixiv 登录窗口，用户登录后自动获取
-    `PHPSESSID` 并保存为 `pixiv_cookie`。
-19. Pixiv Login/Refresh 日志和 UI 不显示完整 `PHPSESSID`，保存后 Settings 仍显示 masked secret。
-20. Pixiv Login/Refresh 成功后自动运行 Pixiv connection test；失败时保留手动输入 fallback。
-
-## API 验收点
-
-- `GET /api/settings` 可返回数据或清晰错误。
-- `GET /api/health` 可返回 `{"data":{"status":"ok"}}`。
-- `GET /api/tasks` 可返回任务列表。
-- `GET /api/images` 可返回图库列表。
-- Settings 页面保存配置不能暴露 secret。
-- 带 Tauri WebView origin 的 CORS 请求可访问本地 API。
-
-## Live 测试规则
-
-- Pixiv cookie 和 DeepSeek key 只允许用户运行时输入。
-- live Pixiv / live LLM 测试保持 opt-in。
-- 不在文档、代码、fixture、终端输出中写入完整 secret。
-- Pixiv 登录态刷新 live 验证需要用户在 Tauri Pixiv 登录窗口手动登录；自动化测试只验证
-  WebView cookie store 读取能力和非敏感日志输出。
-
-## 失败处理
-
-- 依赖下载失败时，先判断是否是网络或沙箱限制。
-- 需要联网安装依赖时，必须请求用户批准。
-- Tauri dev 未能启动时，先记录失败命令、错误摘要和下一步建议到进度文档。
-
-## 当前 MVP 验证命令
+## 当前验证命令
 
 ```text
 cd src/backend && cargo check
@@ -195,16 +70,50 @@ cd src/frontend && npm run build
 cd src/frontend && NEXT_OUTPUT_EXPORT=1 npm run build
 cd tauri-app/src-tauri && cargo check
 cd tauri-app && npm run build
-cd tauri-app && npm run dev
+codesign --verify --deep --strict --verbose=2 "tauri-app/src-tauri/target/release/bundle/macos/Pixiv Platform.app"
+hdiutil verify "tauri-app/src-tauri/target/release/bundle/dmg/Pixiv Platform_1.1.0_aarch64.dmg"
+```
+
+挂载验证：
+
+```text
 hdiutil attach -nobrowse -readonly "tauri-app/src-tauri/target/release/bundle/dmg/Pixiv Platform_1.1.0_aarch64.dmg"
+ls -la "/Volumes/Pixiv Platform"
+codesign --verify --deep --strict --verbose=2 "/Volumes/Pixiv Platform/Pixiv Platform.app"
 hdiutil detach "/Volumes/Pixiv Platform"
 ```
 
-测速命令：
+完整本地质量门：
 
 ```text
-cd tauri-app/src-tauri && /usr/bin/time -p cargo check
-cd src/frontend && /usr/bin/time -p npm run lint
-cd src/frontend && /usr/bin/time -p env NEXT_OUTPUT_EXPORT=1 npm run build
-cd tauri-app && /usr/bin/time -p npm run build
+./tests/run_local.sh
 ```
+
+Live E2E 仍为 opt-in：
+
+```text
+PIXIV_PHPSESSID=... ./tests/e2e/live_single_download.sh
+```
+
+## 已知 Debug 锚点
+
+- `.next/lock` 竞争：不要并行运行独立 Next build 和 Tauri build；Tauri build 会触发前端静态导出。
+- Tauri 自定义 command 权限：新增 command 后需要对应 permission manifest，否则 build 可能失败。
+- 旧数据排查：如果用户反馈图库或 cookie 消失，优先检查共享 SQLite 路径和用户是否保留了旧数据备份。
+- DMG 挂载：沙箱内 `hdiutil attach` 可能失败，需要在授权环境下挂载验证。
+- 旧包损坏提示：优先跑 `codesign --verify --deep --strict`。曾见旧 `.app` 缺少完整 sealed resources；当前通过 `bundle.macOS.signingIdentity = "-"` 修复。
+- Pixiv Refresh：只记录 cookie 是否存在、长度和非敏感元信息；不要打印完整 `PHPSESSID`。
+
+## Live 测试规则
+
+- Pixiv cookie 和 DeepSeek key 只允许运行时输入。
+- live Pixiv / live LLM 测试保持 opt-in。
+- 不在文档、代码、fixture、终端输出中写入完整 secret。
+- Pixiv 登录态刷新 live 验证需要用户在 Tauri Pixiv 登录窗口手动登录。
+- 自动化测试只验证 WebView cookie store 读取能力和非敏感日志输出。
+
+## 失败处理
+
+- 依赖下载失败时，先判断是否是网络或沙箱限制。
+- 需要联网安装依赖时，必须请求用户批准。
+- Tauri 启动失败时，先检查 `~/Library/Logs/Pixiv Platform/desktop.log`、`GET /api/health`、本地端口、SQLite 路径和 codesign 状态。

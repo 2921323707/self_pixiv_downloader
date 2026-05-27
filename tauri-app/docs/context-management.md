@@ -55,7 +55,7 @@
 - Desktop `.app` 打包 MVP 已跑通，并已由用户手动验证功能正常。
 - 当前桌面端每次启动使用随机 `127.0.0.1:<port>` 后端端口。
 - Tauri 创建 WebView 时注入 `window.__PIXIV_PLATFORM_BACKEND_URL__`，前端用它拼接 API base URL。
-- MVP 沿用项目 output/，未得到用户确认前不迁移到 macOS 应用数据目录。
+- 默认存储目录为 `~/Downloads/Pixiv Platform/`；未得到用户确认前不迁移到 macOS Application Support。
 - 遵循 spec-coding：先更新文档，再实现，再验证，再同步 progress/checklist。
 - 默认不要 git commit，除非用户明确要求。
 

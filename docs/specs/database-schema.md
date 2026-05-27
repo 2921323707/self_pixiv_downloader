@@ -156,7 +156,7 @@ Secret values are stored locally. API responses must mask secret values.
 | Key | Default |
 | --- | --- |
 | `pixiv_cookie` | unset |
-| `download_base_path` | `project:output` |
+| `download_base_path` | `~/Downloads/Pixiv Platform` |
 | `deepseek_api_key` | unset |
 | `deepseek_base_url` | `https://api.deepseek.com` |
 | `deepseek_model` | `deepseek-v4-flash` |

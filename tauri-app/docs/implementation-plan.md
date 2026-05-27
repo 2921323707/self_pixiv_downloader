@@ -2,6 +2,8 @@
 
 ## Phase D0: 文档与边界
 
+- [x] `v1.1.1` 已作为成熟交付第一版本 release。
+- [x] 状态文档已从流水追加改为“顶部锚点覆写 + 关键 debug 信息保留 + 阶段结束压缩”。
 - [x] 明确 MVP 范围。
 - [x] 明确非目标。
 - [x] 建立测试规范、上下文管理规范和进度文档。
@@ -35,7 +37,7 @@
 - [x] `.app` 打包前置规划。
 - [x] 确认生产模式使用 Next 静态导出。
 - [x] `.app` MVP 初版继续固定 `127.0.0.1:3000`。
-- [x] 确认 `.app` MVP 继续沿用项目 `output/`。
+- [x] 确认 `.app` 默认数据目录统一为 `~/Downloads/Pixiv Platform/`。
 - [x] 设计 Tauri build 加载静态前端产物的最小实现。
 - [x] 定义固定端口失败时的最小诊断策略。
 - [x] 执行 `.app` 最小打包验证。
@@ -47,23 +49,26 @@
 - [x] P0 桌面 MVP 稳定化：最新 `.app` 可直接打开运行，用户手动测试通过；Gallery 删除交互已修复。
 - [x] P1 桌面默认目录迁移到 `~/Downloads/Pixiv Platform/`，用于下载与默认 SQLite。
 - [x] P1 Settings 下载目录改为系统文件夹选择器配置。
-- [x] P1 旧 `output/` 数据自动恢复到桌面默认目录。
+- [x] P1 默认目录统一为 `~/Downloads/Pixiv Platform/`；旧 `output/` 自动迁移逻辑已移除。
 - [x] P2 基础菜单。
 - [x] P2 正式替换当前临时 RGBA 图标：使用用户提供图片生成 Tauri bundle 图标。
 - [x] P2 启动失败提示与日志位置：增加桌面启动日志文件，并在后端启动或健康检查失败时显示应用内错误窗口。
-- [x] P3a 未签名 `.dmg` 最小闭环：以没有 Apple 开发者认证为前提，产出可上传 GitHub Release 的未签名 `.dmg`。
-- [x] P3 分发说明：记录未签名/未公证 Gatekeeper 风险，并说明他人不需要 Rust、Cargo、Node、npm、TypeScript。
+- [x] P3a `.dmg` 最小闭环：以没有 Apple 开发者认证为前提，产出可上传 GitHub Release 的 ad-hoc signed `.dmg`。
+- [x] P3 分发说明：记录未 Developer ID 签名、未公证 Gatekeeper 风险，并说明他人不需要 Rust、Cargo、Node、npm、TypeScript。
 - [ ] P3 正式分发评估：未来如需公开分发，再评估 Apple 账号、证书、签名、公证和更新渠道。
-- [x] P3 未签名 `.dmg` 最小产物验证。
+- [x] P3 `.dmg` 最小产物验证。
+- [x] P3a `.dmg` 损坏提示复查：显式启用 macOS ad-hoc signing，重新 build 后 `.app` codesign、
+  `.dmg` checksum 和挂载结构验证通过。
 - [ ] P3 签名、公证。
 - [ ] P3 自动更新。
 
 ## Phase D6: 下一阶段建议
 
+- [x] 以 `v1.1.1` 作为成熟交付第一版维护基线。
 - [x] P2 基础菜单：先做 macOS 常见菜单项与安全的窗口操作，不扩大业务逻辑面。
   已加入 About / Quit / Reload，Developer Tools 仅在 debug 构建显示；不接入业务逻辑。
-- [x] P3 分发评估：先按没有 Apple 开发者认证的现实条件推进未签名 `.dmg`，签名/公证只做后续说明。
-- [x] P3 `.dmg` 最小闭环：优先尝试未签名 `.dmg` 产物，记录产物路径和手动安装测试点。
+- [x] P3 分发评估：先按没有 Apple 开发者认证的现实条件推进 ad-hoc signed `.dmg`，Developer ID 签名/公证只做后续说明。
+- [x] P3 `.dmg` 最小闭环：优先产出 ad-hoc signed `.dmg`，记录产物路径和手动安装测试点。
 - [ ] P4 清理收束：清理项必须先确认，不删除用户未确认的本地产物。
 
 ## Phase D7: Pixiv 登录态刷新
@@ -80,6 +85,8 @@
   `{ value, domain, path, http_only, secure }` 中的非敏感元信息和值；日志只记录长度和状态。
 - [x] Settings UI：在 `pixiv_cookie` 行增加桌面端可见的 Login/Refresh 按钮；非 Tauri Web 环境显示
   手动输入和 Test 作为 fallback。
+- [x] Web 端范围锚定：不实现网页端自动读取 Pixiv `PHPSESSID`；网页端继续让用户手动填写
+  `pixiv_cookie` 并使用 Test 验证。
 - [x] 保存闭环：前端拿到 cookie 后调用现有 `saveSetting("pixiv_cookie", value)`，随后自动调用
   `testPixivConnection("144920810")` 或无作品 ID 的配置验证。
 - [x] 安全处理：获取成功后自动关闭 Pixiv 登录窗口；主 Settings 窗口弹出成功提示；不保留完整 cookie
@@ -93,3 +100,4 @@
 1. Tauri command 不直接写 SQLite，只返回 cookie 给前端。
 2. Settings 按钮保存到既有 `pixiv_cookie` setting，保留手动输入。
 3. 成功后自动 Pixiv Test、关闭登录窗口并弹出非敏感成功提示。
+4. 网页端不追加自动 cookie 获取能力，保持手动填写 `pixiv_cookie` 的 fallback 路径。
