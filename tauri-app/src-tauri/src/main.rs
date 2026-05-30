@@ -32,7 +32,8 @@ fn main() {
         .manage(logger.clone())
         .invoke_handler(tauri::generate_handler![
             select_download_directory,
-            refresh_pixiv_phpsessid
+            refresh_pixiv_phpsessid,
+            open_external_url
         ])
         .setup(move |app| {
             let logger = logger.clone();
@@ -143,6 +144,47 @@ fn select_download_directory() -> Result<Option<String>, String> {
     }
 }
 
+#[tauri::command]
+fn open_external_url(url: String) -> Result<(), String> {
+    const ALLOWED_RELEASES_URL: &str =
+        "https://github.com/2921323707/self_pixiv_downloader/releases";
+    if url != ALLOWED_RELEASES_URL {
+        return Err("external URL is not allowed".to_owned());
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        let status = Command::new("/usr/bin/open")
+            .arg(&url)
+            .status()
+            .map_err(|error| format!("browser could not be opened: {error}"))?;
+        if status.success() {
+            Ok(())
+        } else {
+            Err(format!("browser open command failed with status {status}"))
+        }
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        let status = Command::new("rundll32.exe")
+            .arg("url.dll,FileProtocolHandler")
+            .arg(&url)
+            .status()
+            .map_err(|error| format!("browser could not be opened: {error}"))?;
+        if status.success() {
+            Ok(())
+        } else {
+            Err(format!("browser open command failed with status {status}"))
+        }
+    }
+
+    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+    {
+        Err("opening external URLs is not supported on this platform yet".to_owned())
+    }
+}
+
 #[cfg(target_os = "macos")]
 fn select_download_directory_macos() -> Result<Option<String>, String> {
     let output = Command::new("/usr/bin/osascript")
@@ -209,6 +251,8 @@ struct PixivSessionCookie {
     path: Option<String>,
     http_only: Option<bool>,
     secure: Option<bool>,
+    user_uid: String,
+    user_name: Option<String>,
 }
 
 #[tauri::command]
@@ -243,7 +287,7 @@ async fn refresh_pixiv_phpsessid(
                         ));
 
                         match validate_pixiv_login_cookie(&cookie_value) {
-                            Ok(_user_uid) => {
+                            Ok(profile) => {
                                 logger.log("pixiv login cookie verified");
                                 let session_cookie = PixivSessionCookie {
                                     value: cookie_value,
@@ -251,6 +295,8 @@ async fn refresh_pixiv_phpsessid(
                                     path: cookie.path().map(str::to_owned),
                                     http_only: cookie.http_only(),
                                     secure: cookie.secure(),
+                                    user_uid: profile.user_uid,
+                                    user_name: profile.user_name,
                                 };
                                 if let Err(error) = login_window.close() {
                                     logger.log(&format!(
@@ -282,9 +328,11 @@ async fn refresh_pixiv_phpsessid(
     .map_err(|error| format!("Pixiv login task failed: {error}"))?
 }
 
-fn validate_pixiv_login_cookie(cookie_value: &str) -> Result<String, String> {
+fn validate_pixiv_login_cookie(
+    cookie_value: &str,
+) -> Result<pixiv_platform_backend::pixiv::PixivAccountProfile, String> {
     PixivHttpClient::new(cookie_value)
-        .and_then(|client| client.fetch_current_user_uid())
+        .and_then(|client| client.fetch_current_user_profile())
         .map_err(|error| error.to_string())
 }
 

@@ -8,9 +8,10 @@ import {
   GalleryHorizontalEnd,
   Home,
   ListChecks,
-  Settings
+  Settings,
+  UserRound
 } from "lucide-react";
-import { fetchSettings } from "../lib/api";
+import { fetchPixivAccounts, fetchSettings, fetchTasks } from "../lib/api";
 
 const navItems = [
   { href: "/", label: "Home", icon: Home },
@@ -30,6 +31,8 @@ const themeLabels: Record<ThemeId, string> = {
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [theme, setTheme] = useState<ThemeId>("cyan-studio");
+  const [activePixivUid, setActivePixivUid] = useState<string | null>(null);
+  const [activeTaskRunning, setActiveTaskRunning] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -62,6 +65,56 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  useEffect(() => {
+    let active = true;
+
+    async function loadActiveAccount() {
+      try {
+        const result = await fetchPixivAccounts();
+        if (!active) return;
+        setActivePixivUid(result.active?.user_uid || null);
+      } catch {
+        if (active) setActivePixivUid(null);
+      }
+    }
+
+    function handlePixivAccountChange() {
+      loadActiveAccount();
+    }
+
+    loadActiveAccount();
+    window.addEventListener("pixiv-account-change", handlePixivAccountChange);
+
+    return () => {
+      active = false;
+      window.removeEventListener("pixiv-account-change", handlePixivAccountChange);
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadActiveTasks() {
+      try {
+        const result = await fetchTasks({ limit: 5 });
+        if (!active) return;
+        setActiveTaskRunning(
+          result.items.some((task) => task.status === "pending" || task.status === "running")
+        );
+      } catch {
+        if (active) setActiveTaskRunning(false);
+      }
+    }
+
+    loadActiveTasks();
+    const interval = window.setInterval(loadActiveTasks, 4000);
+
+    return () => {
+      active = false;
+      window.clearInterval(interval);
+    };
+  }, []);
+
   return (
     <div className="app-shell">
       <header className="topbar">
@@ -86,15 +139,25 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 href={item.href}
                 key={item.href}
               >
-                <Icon size={17} aria-hidden="true" />
+                <Icon
+                  className={
+                    item.href === "/download" && activeTaskRunning ? "nav-download-active" : ""
+                  }
+                  size={17}
+                  aria-hidden="true"
+                />
                 <span>{item.label}</span>
               </Link>
             );
           })}
         </nav>
-        <div className="task-pill" aria-label="Active task summary">
-          <span className="pulse" aria-hidden="true" />
-          Queue ready
+        <div
+          className={activePixivUid ? "task-pill uid-pill" : "task-pill uid-pill muted"}
+          aria-label="Active Pixiv account"
+          title={activePixivUid ? `Active Pixiv UID ${activePixivUid}` : "Pixiv account not bound"}
+        >
+          <UserRound size={15} aria-hidden="true" />
+          UID: {activePixivUid || "Not bound"}
         </div>
       </header>
       <main className="main">{children}</main>

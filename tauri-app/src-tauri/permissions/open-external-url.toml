@@ -1,0 +1,4 @@
+[[permission]]
+identifier = "open-external-url"
+description = "Allows the main window to open the Pixiv Platform releases page in the system browser."
+commands.allow = ["open_external_url"]

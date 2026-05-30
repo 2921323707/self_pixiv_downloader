@@ -4,8 +4,13 @@ use rusqlite::{Connection, OptionalExtension, params};
 
 use crate::errors::AppError;
 
-const MIGRATIONS: &[(&str, &str)] =
-    &[("0001_init", include_str!("../../migrations/0001_init.sql"))];
+const MIGRATIONS: &[(&str, &str)] = &[
+    ("0001_init", include_str!("../../migrations/0001_init.sql")),
+    (
+        "0002_pixiv_accounts",
+        include_str!("../../migrations/0002_pixiv_accounts.sql"),
+    ),
+];
 
 pub fn open(path: impl AsRef<Path>) -> Result<Connection, AppError> {
     let conn = Connection::open(path)?;

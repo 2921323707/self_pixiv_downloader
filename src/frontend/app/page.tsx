@@ -5,33 +5,43 @@ import { useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
   Bot,
+  Cloud,
   Cpu,
   Database,
   Download,
+  ExternalLink,
   Folder,
   GalleryHorizontalEnd,
   Gauge,
   Heart,
   ImageOff,
-  KeyRound,
   Layers,
   ListChecks,
-  Loader2,
   Settings,
   ShieldCheck,
   Sparkles,
-  UserRound
+  UserRound,
+  WifiOff
 } from "lucide-react";
 import {
   apiUrl,
   fetchImages,
+  fetchRuntimeReadiness,
   fetchSettings,
   fetchTasks,
+  getTauriInvoke,
   GalleryImage,
   PublicSetting,
+  RuntimeReadinessCheck,
+  RuntimeReadinessResult,
+  saveSetting,
   TaskSummary
 } from "../lib/api";
 import { StatusBadge } from "../components/StatusBadge";
+
+const APP_UPDATE_URL = "https://github.com/2921323707/self_pixiv_downloader/releases";
+let homeReadinessChecked = false;
+let homeReadinessCache: RuntimeReadinessResult | null = null;
 
 const quickEntries = [
   { href: "/download", label: "Single", icon: Download },
@@ -60,15 +70,27 @@ const roadmapEntries = [
   }
 ];
 
+type PixivSessionCookie = {
+  value: string;
+  domain: string | null;
+  path: string | null;
+  http_only: boolean | null;
+  secure: boolean | null;
+  user_uid: string;
+  user_name: string | null;
+};
+
 export default function HomePage() {
   const [tasks, setTasks] = useState<TaskSummary[]>([]);
   const [images, setImages] = useState<GalleryImage[]>([]);
   const [settings, setSettings] = useState<PublicSetting[]>([]);
+  const [readiness, setReadiness] = useState<RuntimeReadinessResult | null>(null);
   const [bannerIndex, setBannerIndex] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [bindingPixiv, setBindingPixiv] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function loadDashboard() {
+  async function loadDashboard(options: { checkReadiness?: boolean } = {}) {
     setLoading(true);
     setError(null);
     try {
@@ -80,6 +102,15 @@ export default function HomePage() {
       setTasks(taskResult.items);
       setImages(imageResult.items);
       setSettings(settingsResult.items);
+
+      if (options.checkReadiness) {
+        homeReadinessChecked = true;
+        const readinessResult = await fetchRuntimeReadiness();
+        homeReadinessCache = readinessResult;
+        setReadiness(readinessResult);
+      } else {
+        setReadiness(homeReadinessCache);
+      }
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Dashboard lookup failed");
     } finally {
@@ -87,8 +118,57 @@ export default function HomePage() {
     }
   }
 
+  async function bindPixivAccount() {
+    const invoke = getTauriInvoke();
+    if (!invoke) {
+      setError("Pixiv binding is available in the Tauri desktop app.");
+      return;
+    }
+
+    setBindingPixiv(true);
+    setError(null);
+    try {
+      const cookie = await invoke<PixivSessionCookie>("refresh_pixiv_phpsessid");
+      const saved = await saveSetting("pixiv_cookie", cookie.value);
+      setSettings((current) =>
+        current.map((item) => (item.key === saved.key ? saved : item))
+      );
+      await loadDashboard({ checkReadiness: true });
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Pixiv binding failed");
+    } finally {
+      setBindingPixiv(false);
+    }
+  }
+
+  async function openUpdates() {
+    const invoke = getTauriInvoke();
+    if (invoke) {
+      try {
+        await invoke("open_external_url", { url: APP_UPDATE_URL });
+        return;
+      } catch (caught) {
+        setError(caught instanceof Error ? caught.message : "Update page could not be opened");
+        return;
+      }
+    }
+
+    window.open(APP_UPDATE_URL, "_blank", "noreferrer");
+  }
+
   useEffect(() => {
-    loadDashboard();
+    loadDashboard({ checkReadiness: !homeReadinessChecked });
+  }, []);
+
+  useEffect(() => {
+    function handlePixivAccountChange() {
+      loadDashboard({ checkReadiness: true });
+    }
+
+    window.addEventListener("pixiv-account-change", handlePixivAccountChange);
+    return () => {
+      window.removeEventListener("pixiv-account-change", handlePixivAccountChange);
+    };
   }, []);
 
   const bannerImages = useMemo(() => selectBannerImages(images), [images]);
@@ -150,13 +230,13 @@ export default function HomePage() {
           <h1>Home Dashboard</h1>
           <p>Downloader-first command center for queue state, local images, and runtime health.</p>
         </div>
-        <button className="button secondary" onClick={loadDashboard} type="button">
-          {loading ? (
-            <Loader2 className="spin" size={16} aria-hidden="true" />
-          ) : (
-            <ListChecks size={16} aria-hidden="true" />
-          )}
-          Refresh
+        <button
+          className="button secondary"
+          onClick={openUpdates}
+          type="button"
+        >
+          <ExternalLink size={16} aria-hidden="true" />
+          Check Updates
         </button>
       </section>
 
@@ -325,26 +405,34 @@ export default function HomePage() {
             <h2>Configuration</h2>
           </div>
           <div className="config-status-list">
-            <ConfigStatus
-              icon={KeyRound}
-              label="Pixiv cookie"
-              setting={settingsByKey.pixiv_cookie}
+            <RuntimeConfigStatus
+              check={readiness?.pixiv_network ?? null}
+              detail={networkStatusDetail(readiness?.pixiv_network ?? null)}
+              icon={readiness?.pixiv_network.ok ? Cloud : WifiOff}
+              label="Network"
+              onAction={() => loadDashboard({ checkReadiness: true })}
             />
-            <ConfigStatus
+            <RuntimeConfigStatus
+              actionBusy={bindingPixiv}
+              check={readiness?.pixiv_account ?? null}
+              detail={
+                readiness?.pixiv_account.account
+                  ? `UID: ${readiness.pixiv_account.account.user_uid}`
+                  : undefined
+              }
+              icon={UserRound}
+              label="Pixiv binding"
+              onAction={bindPixivAccount}
+            />
+            <RuntimeConfigStatus
+              check={readiness?.deepseek ?? null}
               icon={Bot}
-              label="DeepSeek key"
-              setting={settingsByKey.deepseek_api_key}
-            />
-            <ConfigStatus
-              icon={Folder}
-              label="Download path"
-              setting={settingsByKey.download_base_path}
-              visibleValue={downloadBasePath}
+              label="DeepSeek API"
             />
           </div>
           <div className="panel-footer">
             <p className="quiet">
-              Secrets stay masked in public settings responses and are never printed here.
+              Runtime checks run once when Home first opens; account actions refresh them explicitly.
             </p>
             <Link className="inline-link panel-link" href="/settings">
               Open settings <ArrowRight size={15} aria-hidden="true" />
@@ -404,6 +492,54 @@ export default function HomePage() {
   );
 }
 
+function RuntimeConfigStatus({
+  actionBusy,
+  check,
+  detail,
+  icon: Icon,
+  label,
+  onAction
+}: {
+  actionBusy?: boolean;
+  check: RuntimeReadinessCheck | null;
+  detail?: string;
+  icon: typeof Cpu;
+  label: string;
+  onAction?: () => void;
+}) {
+  const body = detail || check?.recommendation || check?.message || "Waiting for first Home check";
+  const ready = Boolean(check?.ok);
+  const state = check ? (ready ? "ready" : check.status) : "unchecked";
+  const action = !ready ? check?.action : null;
+
+  return (
+    <div className={`config-status-row runtime-inline-status ${ready ? "ready" : "needs-action"}`}>
+      <Icon size={17} aria-hidden="true" />
+      <div>
+        <strong>{label}</strong>
+        <span>{body}</span>
+      </div>
+      <em className={ready ? "ready" : ""}>{state}</em>
+      {action ? (
+        action.href ? (
+          <Link className="inline-link runtime-inline-action" href={action.href}>
+            {action.label}
+          </Link>
+        ) : (
+          <button
+            className="runtime-inline-action"
+            disabled={actionBusy}
+            onClick={onAction}
+            type="button"
+          >
+            {actionBusy ? "Binding..." : action.label}
+          </button>
+        )
+      ) : null}
+    </div>
+  );
+}
+
 function CoreNote({
   icon: Icon,
   title,
@@ -457,34 +593,10 @@ function settingText(setting: PublicSetting | undefined, fallback: string) {
   return fallback;
 }
 
-function hasSettingValue(setting: PublicSetting | undefined) {
-  if (!setting) return false;
-  if (typeof setting.value === "string") return setting.value.trim().length > 0;
-  return setting.value !== null && setting.value !== undefined;
-}
-
-function ConfigStatus({
-  icon: Icon,
-  label,
-  setting,
-  visibleValue
-}: {
-  icon: typeof KeyRound;
-  label: string;
-  setting?: PublicSetting;
-  visibleValue?: string;
-}) {
-  const configured = hasSettingValue(setting);
-  const status = configured ? "Configured" : "Missing";
-
-  return (
-    <div className="config-status-row">
-      <Icon size={17} aria-hidden="true" />
-      <div>
-        <strong>{label}</strong>
-        <span>{visibleValue && configured ? visibleValue : status}</span>
-      </div>
-      <em className={configured ? "ready" : ""}>{configured ? "ready" : "needed"}</em>
-    </div>
-  );
+function networkStatusDetail(check: RuntimeReadinessCheck | null) {
+  if (!check?.ok) return undefined;
+  if (typeof check.latency_ms === "number") {
+    return `Connected · ${Math.max(1, Math.round(check.latency_ms))} ms`;
+  }
+  return "Connected";
 }

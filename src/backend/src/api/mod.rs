@@ -25,6 +25,10 @@ const TASK_QUEUE_BUFFER: usize = 64;
 pub trait PixivClientFactory: Send + Sync {
     fn create(&self) -> Result<Box<dyn PixivClient>, AppError>;
 
+    fn probe_network(&self) -> Result<(), AppError> {
+        Ok(())
+    }
+
     fn create_with_cookie(&self, cookie: Option<&str>) -> Result<Box<dyn PixivClient>, AppError> {
         let _ = cookie;
         self.create()
@@ -120,6 +124,17 @@ impl AppState {
 pub struct EnvPixivClientFactory;
 
 impl PixivClientFactory for EnvPixivClientFactory {
+    fn probe_network(&self) -> Result<(), AppError> {
+        reqwest::blocking::Client::builder()
+            .timeout(std::time::Duration::from_secs(8))
+            .build()?
+            .get("https://www.pixiv.net/")
+            .header(reqwest::header::REFERER, "https://www.pixiv.net/")
+            .send()
+            .map(|_| ())
+            .map_err(AppError::from)
+    }
+
     fn create(&self) -> Result<Box<dyn PixivClient>, AppError> {
         self.create_with_cookie(None)
     }

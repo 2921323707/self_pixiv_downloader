@@ -27,6 +27,7 @@ The project follows a spec-coding workflow:
 | `testing-strategy.md` | Unit, integration, visual, and live-download testing strategy |
 | `spec-audit.md` | Completeness audit, gaps, risks, and guided questions |
 | `traceability.md` | Requirement-to-implementation traceability matrix |
+| `connectivity-account-ux-plan.md` | Startup readiness, Pixiv binding, and local account switching plan |
 
 For a higher-level navigation map across all project documents, start with `docs/DOCUMENT_MAP.md`.
 

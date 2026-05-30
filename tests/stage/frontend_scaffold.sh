@@ -11,6 +11,12 @@ grep -q "fetchTasks({ limit: 3 })" app/page.tsx
 grep -q "fetchImages({ limit: 8, r18_visibility: \"exclude\" })" app/page.tsx
 grep -q "fetchSettings()" app/page.tsx
 grep -q "Home Dashboard" app/page.tsx
+grep -q "Check Updates" app/page.tsx
+grep -q "APP_UPDATE_URL" app/page.tsx
+grep -q "self_pixiv_downloader/releases" app/page.tsx
+grep -q "open_external_url" app/page.tsx
+grep -q "networkStatusDetail" app/page.tsx
+grep -q "RuntimeConfigStatus" app/page.tsx
 grep -q "home-image-banner" app/page.tsx
 grep -q "Rust Core Driver" app/page.tsx
 grep -q "Performance Watch" app/page.tsx
@@ -28,6 +34,8 @@ grep -q "Task detail modal" app/tasks/page.tsx
 grep -q "closeDetail" app/tasks/page.tsx
 grep -q "fetchTasks({ limit: recentLimit })" app/tasks/page.tsx
 grep -q "settingsCategories" app/settings/page.tsx
+grep -q "UID: {activePixivUid || \"Not bound\"}" components/AppShell.tsx
+grep -q "nav-download-active" components/AppShell.tsx
 
 echo "[frontend] typecheck"
 npm run lint

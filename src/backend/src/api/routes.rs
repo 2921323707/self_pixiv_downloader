@@ -2,10 +2,13 @@ use std::net::SocketAddr;
 
 use axum::Router;
 use axum::http::Method;
-use axum::routing::{get, post, put};
+use axum::routing::{delete, get, post, put};
 use tower_http::cors::{Any, CorsLayer};
 
 use super::AppState;
+use super::handlers::accounts::{
+    activate_pixiv_account, delete_pixiv_account, list_pixiv_accounts,
+};
 use super::handlers::downloads::{
     post_download_author, post_download_bookmarks, post_download_single,
 };
@@ -13,6 +16,7 @@ use super::handlers::health::get_health;
 use super::handlers::images::{
     delete_image, get_image, get_image_file, list_images, post_delete_images,
 };
+use super::handlers::readiness::get_runtime_readiness;
 use super::handlers::settings::{get_settings, post_test_deepseek, post_test_pixiv, put_setting};
 use super::handlers::smart::{post_smart_download, post_smart_parse};
 use super::handlers::tasks::{get_task, list_tasks};
@@ -20,6 +24,7 @@ use super::handlers::tasks::{get_task, list_tasks};
 pub fn router(state: AppState) -> Router {
     Router::new()
         .route("/api/health", get(get_health))
+        .route("/api/runtime/readiness", get(get_runtime_readiness))
         .route("/api/download/single", post(post_download_single))
         .route("/api/downloads/single", post(post_download_single))
         .route("/api/downloads/bookmarks", post(post_download_bookmarks))
@@ -37,6 +42,12 @@ pub fn router(state: AppState) -> Router {
         .route("/api/settings/{key}", put(put_setting))
         .route("/api/settings/test/pixiv", post(post_test_pixiv))
         .route("/api/settings/test/deepseek", post(post_test_deepseek))
+        .route("/api/pixiv/accounts", get(list_pixiv_accounts))
+        .route("/api/pixiv/accounts/active", post(activate_pixiv_account))
+        .route(
+            "/api/pixiv/accounts/{user_uid}",
+            delete(delete_pixiv_account),
+        )
         .route("/api/tasks", get(list_tasks))
         .route("/api/tasks/{task_id}", get(get_task))
         .with_state(state)

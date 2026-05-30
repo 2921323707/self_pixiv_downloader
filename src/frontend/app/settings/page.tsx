@@ -1,11 +1,28 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { EyeOff, Folder, FolderOpen, KeyRound, Loader2, Palette, Save, Shield, Wifi } from "lucide-react";
 import {
+  CheckCircle2,
+  EyeOff,
+  Folder,
+  FolderOpen,
+  KeyRound,
+  Loader2,
+  Palette,
+  Save,
+  Shield,
+  Trash2,
+  UserRound,
+  Wifi
+} from "lucide-react";
+import {
+  activatePixivAccount,
+  deletePixivAccount,
+  fetchPixivAccounts,
   fetchSettings,
   getTauriInvoke,
   isTauriDesktopRuntime,
+  PixivAccount,
   PublicSetting,
   saveSetting,
   testDeepSeekConnection,
@@ -32,6 +49,8 @@ type PixivSessionCookie = {
   path: string | null;
   http_only: boolean | null;
   secure: boolean | null;
+  user_uid: string;
+  user_name: string | null;
 };
 
 const themeOptions = [
@@ -95,6 +114,10 @@ export default function SettingsPage() {
   const [pixivTestResult, setPixivTestResult] = useState<string | null>(null);
   const [pixivRefreshStatus, setPixivRefreshStatus] = useState<string | null>(null);
   const [deepseekTestResult, setDeepseekTestResult] = useState<string | null>(null);
+  const [pixivAccounts, setPixivAccounts] = useState<PixivAccount[]>([]);
+  const [activePixivAccount, setActivePixivAccount] = useState<PixivAccount | null>(null);
+  const [loadingPixivAccounts, setLoadingPixivAccounts] = useState(false);
+  const [pixivAccountActionUid, setPixivAccountActionUid] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
@@ -117,8 +140,22 @@ export default function SettingsPage() {
     }
   }
 
+  async function loadPixivAccounts() {
+    setLoadingPixivAccounts(true);
+    try {
+      const result = await fetchPixivAccounts();
+      setPixivAccounts(result.items);
+      setActivePixivAccount(result.active);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Pixiv account lookup failed");
+    } finally {
+      setLoadingPixivAccounts(false);
+    }
+  }
+
   useEffect(() => {
     load();
+    loadPixivAccounts();
   }, []);
 
   useEffect(() => {
@@ -157,9 +194,7 @@ export default function SettingsPage() {
     setSavingKey(setting.key);
     setSavedKey(null);
     setPixivTestResult(null);
-    setPixivRefreshStatus(
-      "Pixiv login window opened. Finish signing in; the cookie will be saved after the account session is verified."
-    );
+    setPixivRefreshStatus(null);
     setDeepseekTestResult(null);
     setError(null);
     try {
@@ -219,6 +254,9 @@ export default function SettingsPage() {
     setSavingKey(setting.key);
     setSavedKey(null);
     setPixivTestResult(null);
+    setPixivRefreshStatus(
+      "Pixiv login window opened. Finish signing in; the cookie will be saved after the account session is verified."
+    );
     setDeepseekTestResult(null);
     setError(null);
     try {
@@ -234,10 +272,13 @@ export default function SettingsPage() {
       setSavedKey(saved.key);
 
       const result = await testPixivConnection("144920810");
+      await loadPixivAccounts();
+      announcePixivAccountChange();
+      const accountLabel = result.user_name || (result.user_uid ? `Pixiv UID ${result.user_uid}` : null);
       setPixivTestResult(
         result.title
-          ? `Pixiv login refreshed: ${result.title}`
-          : `Pixiv login refreshed${cookie.domain ? ` for ${cookie.domain}` : ""}`
+          ? `Pixiv login refreshed${accountLabel ? ` for ${accountLabel}` : ""}: ${result.title}`
+          : `Pixiv login refreshed for ${accountLabel || cookie.domain || "the current account"}`
       );
       setPixivRefreshStatus(null);
       window.alert("Pixiv login verified and refreshed successfully. The login window has been closed.");
@@ -287,13 +328,63 @@ export default function SettingsPage() {
     setError(null);
     try {
       const result = await testPixivConnection("144920810");
+      await loadPixivAccounts();
+      announcePixivAccountChange();
+      const accountLabel = result.user_name || (result.user_uid ? `Pixiv UID ${result.user_uid}` : null);
       setPixivTestResult(
-        result.title ? `Pixiv connection ok: ${result.title}` : "Pixiv cookie is configured"
+        result.title
+          ? `Pixiv connection ok${accountLabel ? ` for ${accountLabel}` : ""}: ${result.title}`
+          : `Pixiv cookie is configured${accountLabel ? ` for ${accountLabel}` : ""}`
       );
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Pixiv connection test failed");
     } finally {
       setTestingPixiv(false);
+    }
+  }
+
+  async function switchPixivAccount(account: PixivAccount) {
+    if (account.is_active) return;
+
+    setPixivAccountActionUid(account.user_uid);
+    setPixivTestResult(null);
+    setPixivRefreshStatus(null);
+    setError(null);
+    try {
+      const activated = await activatePixivAccount(account.user_uid);
+      await Promise.all([load(), loadPixivAccounts()]);
+      announcePixivAccountChange();
+      setPixivTestResult(`Active Pixiv account switched to ${accountLabel(activated)}.`);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Pixiv account switch failed");
+    } finally {
+      setPixivAccountActionUid(null);
+    }
+  }
+
+  async function removePixivAccount(account: PixivAccount) {
+    const label = accountLabel(account);
+    if (
+      !window.confirm(
+        `Delete local Pixiv account ${label}? The Pixiv account itself will not be changed.`
+      )
+    ) {
+      return;
+    }
+
+    setPixivAccountActionUid(account.user_uid);
+    setPixivTestResult(null);
+    setPixivRefreshStatus(null);
+    setError(null);
+    try {
+      await deletePixivAccount(account.user_uid);
+      await Promise.all([load(), loadPixivAccounts()]);
+      announcePixivAccountChange();
+      setPixivTestResult(`Deleted local Pixiv account ${label}.`);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Pixiv account delete failed");
+    } finally {
+      setPixivAccountActionUid(null);
     }
   }
 
@@ -502,9 +593,115 @@ export default function SettingsPage() {
               <p className="quiet">No backend settings are available for this category.</p>
             ) : null}
           </div>
+
+          {activeCategory === "pixiv" ? (
+            <PixivAccountPanel
+              accounts={pixivAccounts}
+              activeAccount={activePixivAccount}
+              actionUid={pixivAccountActionUid}
+              loading={loadingPixivAccounts}
+              onDelete={removePixivAccount}
+              onRefresh={loadPixivAccounts}
+              onSwitch={switchPixivAccount}
+            />
+          ) : null}
         </div>
       </section>
     </div>
+  );
+}
+
+function PixivAccountPanel({
+  accounts,
+  activeAccount,
+  actionUid,
+  loading,
+  onDelete,
+  onRefresh,
+  onSwitch
+}: {
+  accounts: PixivAccount[];
+  activeAccount: PixivAccount | null;
+  actionUid: string | null;
+  loading: boolean;
+  onDelete: (account: PixivAccount) => void;
+  onRefresh: () => void;
+  onSwitch: (account: PixivAccount) => void;
+}) {
+  return (
+    <section className="pixiv-account-panel">
+      <div className="settings-panel-head pixiv-account-head">
+        <div>
+          <h2>Local Pixiv Accounts</h2>
+          <p>
+            {activeAccount
+              ? `Active account: ${accountLabel(activeAccount)}`
+              : "No local Pixiv account is active yet."}
+          </p>
+        </div>
+        <button className="icon-button" onClick={onRefresh} title="Refresh accounts" type="button">
+          {loading ? (
+            <Loader2 className="spin" size={16} aria-hidden="true" />
+          ) : (
+            <Wifi size={16} aria-hidden="true" />
+          )}
+        </button>
+      </div>
+
+      {accounts.length > 0 ? (
+        <div className="pixiv-account-list">
+          {accounts.map((account) => {
+            const busy = actionUid === account.user_uid;
+            return (
+              <div className="pixiv-account-row" key={account.user_uid}>
+                <UserRound size={18} aria-hidden="true" />
+                <div>
+                  <strong>{accountLabel(account)}</strong>
+                  <span>UID {account.user_uid}</span>
+                  <small>Verified {formatAccountTime(account.last_verified_at)}</small>
+                </div>
+                <em className={account.is_active ? "active" : ""}>
+                  {account.is_active ? "active" : "saved"}
+                </em>
+                <div className="pixiv-account-actions">
+                  <button
+                    className="button secondary"
+                    disabled={busy || account.is_active}
+                    onClick={() => onSwitch(account)}
+                    type="button"
+                  >
+                    {busy ? (
+                      <Loader2 className="spin" size={16} aria-hidden="true" />
+                    ) : (
+                      <CheckCircle2 size={16} aria-hidden="true" />
+                    )}
+                    Use
+                  </button>
+                  <button
+                    className="icon-button danger-icon"
+                    disabled={busy}
+                    onClick={() => onDelete(account)}
+                    title={`Delete ${accountLabel(account)}`}
+                    type="button"
+                  >
+                    {busy ? (
+                      <Loader2 className="spin" size={16} aria-hidden="true" />
+                    ) : (
+                      <Trash2 size={16} aria-hidden="true" />
+                    )}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="pixiv-account-empty">
+          <UserRound size={18} aria-hidden="true" />
+          <p>Bind or test Pixiv once to save the verified account locally.</p>
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -521,4 +718,20 @@ function coerceSettingValue(key: string, raw: string): unknown {
 
 function normalizeTheme(value: unknown): ThemeId {
   return value === "sakura-light" ? "sakura-light" : "cyan-studio";
+}
+
+function accountLabel(account: PixivAccount) {
+  return account.user_name && account.user_name.trim()
+    ? account.user_name
+    : `Pixiv UID ${account.user_uid}`;
+}
+
+function formatAccountTime(value: string) {
+  const date = new Date(value.replace(" ", "T"));
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString();
+}
+
+function announcePixivAccountChange() {
+  window.dispatchEvent(new CustomEvent("pixiv-account-change"));
 }

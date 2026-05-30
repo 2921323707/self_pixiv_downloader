@@ -164,6 +164,14 @@ const SETTING_DEFINITIONS: &[SettingDefinition] = &[
         is_secret: false,
     },
     SettingDefinition {
+        key: "pixiv_active_account_uid",
+        is_secret: false,
+    },
+    SettingDefinition {
+        key: "pixiv_active_account_name",
+        is_secret: false,
+    },
+    SettingDefinition {
         key: "pixiv_cookie",
         is_secret: true,
     },
@@ -191,6 +199,7 @@ fn default_public_value_json(definition: SettingDefinition) -> &'static str {
         "max_request_count" => "100",
         "r18_policy" => "\"exclude\"",
         "theme_id" => "\"cyan-studio\"",
+        "pixiv_active_account_uid" | "pixiv_active_account_name" => "\"\"",
         "pixiv_cookie" | "deepseek_api_key" => "\"***\"",
         _ => "null",
     }
@@ -214,7 +223,10 @@ fn validate_setting_value(definition: SettingDefinition, value: &Value) -> Resul
         "download_base_path" => {
             validate_download_base_path(value)?;
         }
-        "deepseek_base_url" | "deepseek_model" => {
+        "deepseek_base_url"
+        | "deepseek_model"
+        | "pixiv_active_account_uid"
+        | "pixiv_active_account_name" => {
             non_empty_string(value, definition.key)?;
         }
         "theme_id" => {

@@ -1,12 +1,18 @@
 # Project Progress
 
-Last updated: 2026-05-27
+Last updated: 2026-05-29
 
 ## Current Anchor
 
 The project is anchored on a downloader-first implementation path plus a mature desktop delivery baseline.
 
 Current phase: **v1.2.0 Windows Desktop Release**. GitHub `v1.1.1` remains the first mature macOS release anchor; `v1.2.0` is the Windows desktop release anchor for the current checkout.
+
+Active work branch on 2026-05-29: `codex/connectivity-account-ux` is the new UX optimization branch for app-entry readiness, Pixiv real-cookie binding, current account identity display, DeepSeek readiness surfacing, and local Pixiv account switching. Planning lives in `docs/specs/connectivity-account-ux-plan.md`.
+
+Connectivity/account UX anchor on 2026-05-30: Home readiness now lives inside the existing Configuration panel rather than a standalone panel; the top-right shell chip displays the active Pixiv UID or `UID: Not bound`; the Download nav icon animates while recent tasks are pending/running; Home's automatic readiness check runs once per app/browser session; and the Home heading action opens the GitHub repository as the App update entry. `./tests/run_local.sh` passed, browser verification passed against local Home, and `cd tauri-app && npm run build` produced a fresh `tauri-app/src-tauri/target/release/bundle/dmg/Pixiv Platform_1.2.0_aarch64.dmg` that passed `hdiutil verify`.
+
+Connectivity/account UX follow-up on 2026-05-30: the Home App update action now opens the GitHub Releases page through a restricted Tauri `open_external_url` command, so desktop clicks use the system browser instead of relying on WebView target handling. Home Configuration is reduced to exactly Network, Pixiv binding, and DeepSeek API; Network includes readiness latency when available, and Download Path no longer appears in that panel. `cargo test`, frontend build, Tauri `cargo check`, `./tests/run_local.sh`, `cd tauri-app && npm run build`, `codesign --verify --deep --strict`, and `hdiutil verify` all passed.
 
 The core Pixiv single-work download path is proven with mock tests, one live Pixiv smoke test, DB-aware local indexing, task-state persistence, deterministic stage/integration test scripts, a thin Axum API wrapper, an in-process Tokio background queue/worker, a Next.js frontend workbench, gallery/settings/task-list data APIs, settings-backed Pixiv cookie/download-root resolution for frontend-initiated downloads, secure local image file serving for Gallery previews, Gallery hard-delete file/index cleanup, author batch download, bookmark batch download, DeepSeek-backed smart prompt parsing, smart tag-search batch download, a Home dashboard backed by real task/image/settings APIs, and UI polish across Home/Download/Tasks/Gallery/Settings. This is now accepted as the v1.0.0 downloader-first final shape.
 

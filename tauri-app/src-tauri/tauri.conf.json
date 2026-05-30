@@ -4,9 +4,9 @@
   "version": "1.2.0",
   "identifier": "local.pixiv-platform.desktop",
   "build": {
-    "beforeDevCommand": "npm.cmd --prefix ../src/frontend run dev",
+    "beforeDevCommand": "npm --prefix ../src/frontend run dev",
     "devUrl": "http://127.0.0.1:3001",
-    "beforeBuildCommand": "scripts\\build-frontend-windows.cmd",
+    "beforeBuildCommand": "NEXT_OUTPUT_EXPORT=1 npm --prefix ../src/frontend run build",
     "frontendDist": "../../src/frontend/out"
   },
   "app": {
@@ -17,7 +17,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["nsis"],
+    "targets": ["app", "dmg"],
     "macOS": {
       "signingIdentity": "-"
     },

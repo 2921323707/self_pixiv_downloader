@@ -1,8 +1,21 @@
 use crate::domain::R18Policy;
 use crate::domain::{PixivWork, PixivWorkRef};
-use crate::errors::AppError;
+use crate::errors::{AppError, ErrorCode};
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PixivAccountProfile {
+    pub user_uid: String,
+    pub user_name: Option<String>,
+}
 
 pub trait PixivClient: Send + Sync {
+    fn fetch_current_user_profile(&self) -> Result<PixivAccountProfile, AppError> {
+        Err(AppError::new(
+            ErrorCode::PixivParseError,
+            "Pixiv account profile lookup is not supported by this client",
+        ))
+    }
+
     fn fetch_work(&self, pixiv_id: &str) -> Result<PixivWork, AppError>;
     fn fetch_author_works(
         &self,
@@ -33,7 +46,7 @@ pub mod http {
 
     use crate::domain::{ImageCategory, PixivPage, PixivWork, PixivWorkRef, R18Policy};
     use crate::errors::{AppError, ErrorCode};
-    use crate::pixiv::PixivClient;
+    use crate::pixiv::{PixivAccountProfile, PixivClient};
 
     pub struct PixivHttpClient {
         client: Client,
@@ -63,6 +76,10 @@ pub mod http {
     }
 
     impl PixivClient for PixivHttpClient {
+        fn fetch_current_user_profile(&self) -> Result<PixivAccountProfile, AppError> {
+            Self::fetch_current_user_profile(self)
+        }
+
         fn fetch_work(&self, pixiv_id: &str) -> Result<PixivWork, AppError> {
             let url = format!("https://www.pixiv.net/ajax/illust/{pixiv_id}");
             let value: Value = self
@@ -211,6 +228,10 @@ pub mod http {
 
     impl PixivHttpClient {
         pub fn fetch_current_user_uid(&self) -> Result<String, AppError> {
+            Ok(self.fetch_current_user_profile()?.user_uid)
+        }
+
+        pub fn fetch_current_user_profile(&self) -> Result<PixivAccountProfile, AppError> {
             let html = self
                 .client
                 .get("https://www.pixiv.net/")
@@ -219,11 +240,16 @@ pub mod http {
                 .error_for_status()?
                 .text()?;
 
-            extract_current_user_uid(&html).ok_or_else(|| {
+            let user_uid = extract_current_user_uid(&html).ok_or_else(|| {
                 AppError::new(
                     ErrorCode::PixivParseError,
                     "Pixiv response did not expose current user id",
                 )
+            })?;
+
+            Ok(PixivAccountProfile {
+                user_uid,
+                user_name: extract_current_user_name(&html),
             })
         }
     }
@@ -581,6 +607,42 @@ pub mod http {
             }
         }
         None
+    }
+
+    fn extract_current_user_name(html: &str) -> Option<String> {
+        for marker in [
+            r#""userData":{"id":""#,
+            r#""userData":{"id":"#,
+            r#""userData":{"name":""#,
+            r#""userName":""#,
+            r#""name":""#,
+        ] {
+            let Some(start) = html.find(marker) else {
+                continue;
+            };
+            let after_marker = &html[start + marker.len()..];
+            let candidate = if marker.contains(r#""name""#) || marker.contains("userName") {
+                after_marker
+            } else {
+                let Some(name_start) = after_marker.find(r#""name":""#) else {
+                    continue;
+                };
+                &after_marker[name_start + r#""name":""#.len()..]
+            };
+            let raw: String = candidate.chars().take_while(|c| *c != '"').collect();
+            let name = decode_jsonish_string(&raw);
+            if !name.trim().is_empty() {
+                return Some(name);
+            }
+        }
+        None
+    }
+
+    fn decode_jsonish_string(value: &str) -> String {
+        value
+            .replace(r#"\""#, r#"""#)
+            .replace(r#"\u002F"#, "/")
+            .replace(r#"\/"#, "/")
     }
 
     fn collect_work_ids(value: Option<&Value>, ids: &mut Vec<String>) {

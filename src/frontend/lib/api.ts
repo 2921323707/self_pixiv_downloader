@@ -122,12 +122,60 @@ export type PixivConnectionTestResult = {
   status: string;
   pixiv_id: string | null;
   title: string | null;
+  user_uid: string | null;
+  user_name: string | null;
+  bound: boolean;
 };
 
 export type DeepSeekConnectionTestResult = {
   configured: boolean;
   status: string;
   model: string;
+};
+
+export type RuntimeReadinessAction = {
+  label: string;
+  href: string | null;
+  action: string | null;
+};
+
+export type RuntimeReadinessCheck = {
+  ok: boolean;
+  status: string;
+  message: string;
+  recommendation: string | null;
+  action: RuntimeReadinessAction | null;
+  error_code: string | null;
+  latency_ms: number | null;
+};
+
+export type PixivAccount = {
+  user_uid: string;
+  user_name: string | null;
+  is_active: boolean;
+  last_verified_at: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type PixivAccountsResult = {
+  items: PixivAccount[];
+  active: PixivAccount | null;
+};
+
+export type PixivAccountDeleteResult = {
+  deleted: boolean;
+};
+
+export type RuntimePixivAccountReadiness = RuntimeReadinessCheck & {
+  account: PixivAccount | null;
+};
+
+export type RuntimeReadinessResult = {
+  backend: RuntimeReadinessCheck;
+  pixiv_network: RuntimeReadinessCheck;
+  pixiv_account: RuntimePixivAccountReadiness;
+  deepseek: RuntimeReadinessCheck;
 };
 
 export type SmartParseResult = {
@@ -368,6 +416,14 @@ export async function fetchSettings(): Promise<SettingsResult> {
   return unwrap<SettingsResult>(response);
 }
 
+export async function fetchRuntimeReadiness(): Promise<RuntimeReadinessResult> {
+  const response = await fetch(apiUrl("/api/runtime/readiness"), {
+    cache: "no-store"
+  });
+
+  return unwrap<RuntimeReadinessResult>(response);
+}
+
 export async function saveSetting(key: string, value: unknown): Promise<PublicSetting> {
   const response = await fetch(apiUrl(`/api/settings/${encodeURIComponent(key)}`), {
     method: "PUT",
@@ -398,6 +454,34 @@ export async function testDeepSeekConnection(): Promise<DeepSeekConnectionTestRe
   });
 
   return unwrap<DeepSeekConnectionTestResult>(response);
+}
+
+export async function fetchPixivAccounts(): Promise<PixivAccountsResult> {
+  const response = await fetch(apiUrl("/api/pixiv/accounts"), {
+    cache: "no-store"
+  });
+
+  return unwrap<PixivAccountsResult>(response);
+}
+
+export async function activatePixivAccount(userUid: string): Promise<PixivAccount> {
+  const response = await fetch(apiUrl("/api/pixiv/accounts/active"), {
+    method: "POST",
+    headers: {
+      "content-type": "application/json"
+    },
+    body: JSON.stringify({ user_uid: userUid })
+  });
+
+  return unwrap<PixivAccount>(response);
+}
+
+export async function deletePixivAccount(userUid: string): Promise<PixivAccountDeleteResult> {
+  const response = await fetch(apiUrl(`/api/pixiv/accounts/${encodeURIComponent(userUid)}`), {
+    method: "DELETE"
+  });
+
+  return unwrap<PixivAccountDeleteResult>(response);
 }
 
 async function unwrap<T>(response: Response): Promise<T> {

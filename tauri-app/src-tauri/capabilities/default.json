@@ -3,5 +3,10 @@
   "identifier": "default",
   "description": "Default desktop capability for the Pixiv Platform MVP window.",
   "windows": ["main"],
-  "permissions": ["core:default", "select-download-directory", "refresh-pixiv-phpsessid"]
+  "permissions": [
+    "core:default",
+    "select-download-directory",
+    "refresh-pixiv-phpsessid",
+    "open-external-url"
+  ]
 }

@@ -15,14 +15,14 @@ use crate::ai::{
 use crate::api::{
     AiClientFactory, ApiEnvelope, AppState, BatchDownloadResponse, DeepSeekConnectionTestResponse,
     ImageDeleteBatchResponse, ImageListResponse, PixivClientFactory, PixivConnectionTestResponse,
-    SettingResponse, SettingsListResponse, SingleDownloadResponse, SmartParseResponse,
-    TaskListResponse, TaskResponse, router,
+    RuntimeReadinessResponse, SettingResponse, SettingsListResponse, SingleDownloadResponse,
+    SmartParseResponse, TaskListResponse, TaskResponse, router,
 };
 use crate::db;
 use crate::domain::{ImageCategory, ImageSource, PixivPage, PixivWork, PixivWorkRef, R18Policy};
 use crate::errors::{AppError, ErrorCode};
 use crate::images::{ImageRepository, NewImageRecord};
-use crate::pixiv::PixivClient;
+use crate::pixiv::{PixivAccountProfile, PixivClient};
 use crate::settings::SettingsRepository;
 
 #[derive(Clone)]
@@ -114,6 +114,17 @@ impl AiClient for StaticAiClient {
 }
 
 impl PixivClient for StaticPixivClient {
+    fn fetch_current_user_profile(&self) -> Result<PixivAccountProfile, AppError> {
+        Ok(PixivAccountProfile {
+            user_uid: self
+                .work
+                .author_uid
+                .clone()
+                .unwrap_or_else(|| "9988".to_owned()),
+            user_name: self.work.author_name.clone(),
+        })
+    }
+
     fn fetch_work(&self, pixiv_id: &str) -> Result<PixivWork, AppError> {
         if pixiv_id == self.work.pixiv_id {
             Ok(self.work.clone())
@@ -189,6 +200,25 @@ impl PixivClient for StaticPixivClient {
 }
 
 #[derive(Clone)]
+struct NetworkDownPixivFactory;
+
+impl PixivClientFactory for NetworkDownPixivFactory {
+    fn probe_network(&self) -> Result<(), AppError> {
+        Err(AppError::new(
+            ErrorCode::PixivNetworkError,
+            "mock Pixiv network is down",
+        ))
+    }
+
+    fn create(&self) -> Result<Box<dyn PixivClient>, AppError> {
+        Err(AppError::new(
+            ErrorCode::MissingPixivCookie,
+            "mock Pixiv cookie was not provided from settings",
+        ))
+    }
+}
+
+#[derive(Clone)]
 struct BlockingPixivFactory {
     work: PixivWork,
     images: HashMap<String, Vec<u8>>,
@@ -212,6 +242,17 @@ struct BlockingPixivClient {
 }
 
 impl PixivClient for BlockingPixivClient {
+    fn fetch_current_user_profile(&self) -> Result<PixivAccountProfile, AppError> {
+        Ok(PixivAccountProfile {
+            user_uid: self
+                .work
+                .author_uid
+                .clone()
+                .unwrap_or_else(|| "9988".to_owned()),
+            user_name: self.work.author_name.clone(),
+        })
+    }
+
     fn fetch_work(&self, pixiv_id: &str) -> Result<PixivWork, AppError> {
         if pixiv_id == self.work.pixiv_id {
             Ok(self.work.clone())
@@ -495,6 +536,7 @@ async fn api_health_returns_ok() {
     let app = router(state);
 
     let response = app
+        .clone()
         .oneshot(
             Request::builder()
                 .method(Method::GET)
@@ -509,6 +551,96 @@ async fn api_health_returns_ok() {
     let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
     let envelope: ApiEnvelope<super::HealthResponse> = serde_json::from_slice(&body).unwrap();
     assert_eq!(envelope.data.status, "ok");
+
+    let _ = fs::remove_dir_all(root);
+}
+
+#[tokio::test]
+async fn req_runtime_001_readiness_returns_structured_ready_state() {
+    let (state, root) = smart_state("runtime_ready");
+    let app = router(state);
+    save_setting(
+        app.clone(),
+        "pixiv_cookie",
+        serde_json::json!("placeholder-runtime-value"),
+    )
+    .await;
+    save_setting(
+        app.clone(),
+        "deepseek_api_key",
+        serde_json::json!("placeholder-runtime-value"),
+    )
+    .await;
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method(Method::GET)
+                .uri("/api/runtime/readiness")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), axum::http::StatusCode::OK);
+    let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    let envelope: ApiEnvelope<RuntimeReadinessResponse> = serde_json::from_slice(&body).unwrap();
+    assert!(envelope.data.backend.ok);
+    assert!(envelope.data.pixiv_network.ok);
+    assert!(envelope.data.pixiv_network.latency_ms.is_some());
+    assert!(envelope.data.pixiv_account.ok);
+    assert_eq!(envelope.data.pixiv_account.status, "bound");
+    assert_eq!(
+        envelope
+            .data
+            .pixiv_account
+            .account
+            .as_ref()
+            .map(|account| account.user_uid.as_str()),
+        Some("9988")
+    );
+    assert!(envelope.data.deepseek.ok);
+
+    let _ = fs::remove_dir_all(root);
+}
+
+#[tokio::test]
+async fn req_runtime_002_readiness_returns_tun_guidance_when_pixiv_network_fails() {
+    let root = std::env::temp_dir().join(format!(
+        "pixiv_platform_backend_api_runtime_network_down_{}",
+        std::process::id()
+    ));
+    let _ = fs::remove_dir_all(&root);
+    let state = AppState::new(
+        root.join("api.sqlite3"),
+        &root,
+        Arc::new(NetworkDownPixivFactory),
+    );
+    let app = router(state);
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method(Method::GET)
+                .uri("/api/runtime/readiness")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), axum::http::StatusCode::OK);
+    let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    let envelope: ApiEnvelope<RuntimeReadinessResponse> = serde_json::from_slice(&body).unwrap();
+    assert!(!envelope.data.pixiv_network.ok);
+    assert_eq!(envelope.data.pixiv_network.status, "unreachable");
+    assert_eq!(
+        envelope.data.pixiv_network.recommendation.as_deref(),
+        Some("Network unreachable. Please enable TUN mode and retry.")
+    );
+    assert_eq!(envelope.data.pixiv_account.status, "missing");
+    assert_eq!(envelope.data.deepseek.status, "missing");
 
     let _ = fs::remove_dir_all(root);
 }
@@ -622,6 +754,7 @@ async fn req_ui_002_post_single_download_rejects_invalid_pixiv_id() {
     let app = router(state);
 
     let response = app
+        .clone()
         .oneshot(
             Request::builder()
                 .method(Method::POST)
@@ -1155,6 +1288,7 @@ async fn req_dl_007_settings_pixiv_test_uses_masked_cookie_without_download() {
     .await;
 
     let response = app
+        .clone()
         .oneshot(
             Request::builder()
                 .method(Method::POST)
@@ -1172,6 +1306,88 @@ async fn req_dl_007_settings_pixiv_test_uses_masked_cookie_without_download() {
     assert!(envelope.data.configured);
     assert_eq!(envelope.data.status, "ok");
     assert_eq!(envelope.data.title.as_deref(), Some("api mock"));
+    assert!(envelope.data.bound);
+    assert_eq!(envelope.data.user_uid.as_deref(), Some("9988"));
+    assert_eq!(envelope.data.user_name.as_deref(), Some("mock author"));
+
+    let accounts_response = app
+        .oneshot(
+            Request::builder()
+                .method(Method::GET)
+                .uri("/api/pixiv/accounts")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(accounts_response.status(), axum::http::StatusCode::OK);
+    let body = to_bytes(accounts_response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let accounts: ApiEnvelope<super::PixivAccountsListResponse> =
+        serde_json::from_slice(&body).unwrap();
+    assert_eq!(accounts.data.items.len(), 1);
+    assert_eq!(accounts.data.active.unwrap().user_uid, "9988");
+    let _ = fs::remove_dir_all(root);
+}
+
+#[tokio::test]
+async fn req_pixiv_accounts_delete_active_clears_runtime_cookie() {
+    let (state, root) = cookie_required_state("pixiv_delete_active");
+    let app = router(state);
+    save_setting(
+        app.clone(),
+        "pixiv_cookie",
+        serde_json::json!("placeholder-runtime-value"),
+    )
+    .await;
+
+    let bind_response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method(Method::POST)
+                .uri("/api/settings/test/pixiv")
+                .header("content-type", "application/json")
+                .body(axum::body::Body::from(r#"{"pixiv_id":null}"#))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(bind_response.status(), axum::http::StatusCode::OK);
+
+    let delete_response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method(Method::DELETE)
+                .uri("/api/pixiv/accounts/9988")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(delete_response.status(), axum::http::StatusCode::OK);
+
+    let readiness_response = app
+        .oneshot(
+            Request::builder()
+                .method(Method::GET)
+                .uri("/api/runtime/readiness")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(readiness_response.status(), axum::http::StatusCode::OK);
+    let body = to_bytes(readiness_response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let envelope: ApiEnvelope<RuntimeReadinessResponse> = serde_json::from_slice(&body).unwrap();
+    assert!(!envelope.data.pixiv_account.ok);
+    assert_eq!(envelope.data.pixiv_account.status, "missing");
+    assert!(envelope.data.pixiv_account.account.is_none());
+
     let _ = fs::remove_dir_all(root);
 }
 

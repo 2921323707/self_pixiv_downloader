@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 
+use crate::accounts::PixivAccountRecord;
 use crate::ai::{DeepSeekConnectionStatus, SmartParseInput, SmartParsePlan};
 use crate::domain::{DownloadRequest, ImageCategory, ImageSource, R18Policy, TaskStatus, TaskType};
 use crate::errors::{AppError, ErrorCode};
@@ -268,6 +269,9 @@ pub struct PixivConnectionTestResponse {
     pub status: String,
     pub pixiv_id: Option<String>,
     pub title: Option<String>,
+    pub user_uid: Option<String>,
+    pub user_name: Option<String>,
+    pub bound: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -280,6 +284,70 @@ pub struct DeepSeekConnectionTestResponse {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct HealthResponse {
     pub status: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RuntimeReadinessResponse {
+    pub backend: RuntimeReadinessCheckResponse,
+    pub pixiv_network: RuntimeReadinessCheckResponse,
+    pub pixiv_account: RuntimePixivAccountReadinessResponse,
+    pub deepseek: RuntimeReadinessCheckResponse,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RuntimeReadinessCheckResponse {
+    pub ok: bool,
+    pub status: String,
+    pub message: String,
+    pub recommendation: Option<String>,
+    pub action: Option<RuntimeReadinessActionResponse>,
+    pub error_code: Option<String>,
+    pub latency_ms: Option<u128>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RuntimePixivAccountReadinessResponse {
+    pub ok: bool,
+    pub status: String,
+    pub message: String,
+    pub recommendation: Option<String>,
+    pub action: Option<RuntimeReadinessActionResponse>,
+    pub error_code: Option<String>,
+    pub latency_ms: Option<u128>,
+    pub account: Option<PixivAccountResponse>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RuntimeReadinessActionResponse {
+    pub label: String,
+    pub href: Option<String>,
+    pub action: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct PixivAccountResponse {
+    pub user_uid: String,
+    pub user_name: Option<String>,
+    pub is_active: bool,
+    pub last_verified_at: String,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct PixivAccountsListResponse {
+    pub items: Vec<PixivAccountResponse>,
+    pub active: Option<PixivAccountResponse>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct PixivAccountActivateRequest {
+    pub user_uid: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct PixivAccountDeleteResponse {
+    pub deleted: bool,
 }
 
 impl SingleDownloadRequest {
@@ -783,6 +851,17 @@ pub(crate) fn deepseek_connection_response(
         configured: status.configured,
         status: status.status,
         model: status.model,
+    }
+}
+
+pub(crate) fn pixiv_account_response(account: PixivAccountRecord) -> PixivAccountResponse {
+    PixivAccountResponse {
+        user_uid: account.user_uid,
+        user_name: account.user_name,
+        is_active: account.is_active,
+        last_verified_at: account.last_verified_at,
+        created_at: account.created_at,
+        updated_at: account.updated_at,
     }
 }
 
